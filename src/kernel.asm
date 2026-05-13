@@ -1,0 +1,889 @@
+use16
+
+macro patch num, handler, rcs {
+    mov word [es:num*4], handler
+    mov word [es:num*4+2], rcs
+}
+
+main:
+    mov ax, cs
+    mov ds, ax
+    mov es, ax
+
+    mov [boot_disk], dl
+    call load_fat12_info
+
+    call reset_vga
+
+    lea si, [msg_kernel_startup]
+    call puts
+
+    lea si, [msg_patching]
+    call puts
+
+    push es
+    xor ax, ax
+    mov es, ax
+    mov ax, cs
+    patch 0x21, int21, ax
+    pop es
+
+    mov [deadly_errors], 0
+
+    ; done printing startup messages
+    ; put newline for spacing idk look good
+    lea si, [newline]
+    call puts
+
+    xor al, al
+    mov cx, TOTAL_MEM_BLOCKS
+    lea di, [mem_blocks]
+    rep stosb
+
+    lea si, [file_scli_com]
+    xor bx, bx
+    call run_program_new
+
+    lea si, [msg_kernel_done]
+    call puts
+
+halt:
+    cli
+    hlt
+
+; cl - amount to allocate
+; returns:
+;   bx - starting block
+allocate_this_much:
+    push ax
+    push dx
+    push cx
+    push di
+    mov al, cl
+    call get_smallest_contiguous_free_memory_above_size
+    cmp cl, al
+    jnae kernel_panic   ; out of free memory!! panic!!! (there is basically no way to safely recover from this)
+                        ; this will get thrown if a file too large to fit into memory is attempted to be allocated, 
+                        ; so just very large files CAN set this off, but whatever who cares
+
+    mov cl, al
+    dec cl
+    mov al, 0xf8 ; 0xf8 is taken block
+    lea di, [mem_blocks + bx]
+    rep stosb
+
+    mov byte [di], 0xff ; make the final allocated block 0xff [end of chunk]
+
+    pop di
+    pop cx
+    pop dx
+    pop ax
+    ret
+
+; bx - block
+deallocate_interrupt_wrapper:
+    push ax
+    push ds
+    mov ax, cs
+    mov ds, ax
+    call deallocate
+    pop ds
+    pop ax
+    ret
+
+; bx - starting block
+deallocate:
+    push ax
+    push bx
+    push si
+    lea si, [mem_blocks + bx]
+    mov al, [si]
+    cmp al, 0xf8
+    jnae .done
+    cmp al, 0xf9
+    je .done ; do not mess with resident program! pls!
+.deallocate_loop:
+    mov al, [si]
+    cmp al, 0xff
+    je .reached_end
+    mov byte [si], 0x00
+    inc si
+    jmp .deallocate_loop
+.reached_end:
+    mov byte [si], 0x00
+.done:
+    pop si
+    pop bx
+    pop ax
+    ret
+
+; cl - desired size
+; returns:
+;   bx - starting block
+;   cl - size
+; remember blocks are 2KiB large!
+get_smallest_contiguous_free_memory_above_size:
+    push ax
+    push si
+    mov [smallest_mem_block], 0xffff
+    mov [smallest_mem_block_size], 0xff
+    mov [desired_size], cl
+
+    xor bx, bx ; bx will contain the first contiguous free block
+    xor si, si ; si will contain the current one
+    xor cl, cl ; cl will contain the size just for simplicity, could be done using maths though (ew)
+.go_over_blocks:
+    cmp si, TOTAL_MEM_BLOCKS
+    je .block_taken
+    ja .done_looking
+    mov al, [mem_blocks + si]
+    test al, al
+    jnz .block_taken
+    inc si
+    inc cl
+    jmp .go_over_blocks
+.block_taken:
+    cmp cl, [desired_size]
+    jnae .useless_for_my_purposes
+    cmp cl, [smallest_mem_block_size]
+    jnb .useless_for_my_purposes
+    mov [smallest_mem_block], bx
+    mov [smallest_mem_block_size], cl
+.useless_for_my_purposes:
+    inc si
+    mov bx, si
+    xor cl, cl
+    jmp .go_over_blocks
+.done_looking:
+    mov bx, [smallest_mem_block]
+    mov cl, [smallest_mem_block_size]
+
+    cmp bx, 0xffff
+    je kernel_panic
+
+    pop si
+    pop ax
+    ret
+
+; es - segment of the program wishing to stay resident (only the first 2KiB will be resident so plan accordingly)
+stay_resident_after_terminate:
+    push bx
+
+    mov bx, es
+    sub bx, 0x2000
+    shr bx, 7
+    
+    call deallocate ; deallocate file
+    ; reallocate just the first 2KiB block
+    mov byte [cs:mem_blocks + bx], 0xf9 ; resident program
+
+    pop bx
+    ret
+
+puts:
+    push ax
+    push bx
+    push si
+    xor bh, bh
+    mov ah, 0x0e
+.loop:
+    lodsb
+    test al, al
+    jz .done
+    int 0x10
+    jmp .loop
+.done:
+    pop si
+    pop bx
+    pop ax
+    ret
+
+reset_vga:
+    pusha
+    mov ax, 0x0003
+    int 0x10
+    mov ax, 0x1111
+    xor bl, bl
+    int 0x10
+    popa
+    ret
+
+; ds:si - program
+; ds:bx - program arguments (null terminated, max 127 characters)
+run_program_new:
+    push ds
+    push es
+    pusha
+    mov ax, cs
+    mov es, ax
+    mov si, bx
+    test si, si
+    jnz .continue_on
+    lea si, [reupload]
+.continue_on:
+    lea di, [run_program_argument_buffer]
+    mov cx, 127
+    rep movsb
+    mov byte [es:run_program_argument_buffer + 127], 0
+    popa
+    pusha
+    call fat12_read_file_new
+    push bx
+    mov ax, cs
+    mov es, ax
+    push ax
+    push word .return
+    shl bx, 7
+    add bx, 0x2000
+    push bx
+    push word 0
+    lea si, [run_program_argument_buffer]
+    mov dl, [es:ebr_drive_number]
+    retf
+.return:
+    mov ax, cs
+    mov ds, ax
+    pop bx
+    call deallocate
+    popa
+    pop es
+    pop ds
+    ret
+
+; ; ds:si - program
+; ; ds:bx - program arguments (null terminated, max 127 characters)
+; run_program:
+;     push ds
+;     push es
+;     pusha
+;     mov ax, cs
+;     mov es, ax
+;     mov si, bx
+;     test si, si
+;     jnz .continue_on
+;     lea si, [reupload]
+; .continue_on:
+;     lea di, [run_program_argument_buffer]
+;     mov cx, 127
+;     rep movsb
+;     mov byte [es:run_program_argument_buffer + 127], 0
+;     popa
+;     pusha
+;     mov bx, [cs:next_segment]
+;     cmp bx, 0x7000
+;     jae kernel_panic
+;     add [cs:next_segment], 0x1000
+;     mov es, bx
+;     xor bx, bx
+;     mov [cs:if_something_goes_wrong_unallocate_last_segment], 1
+;     call fat12_read_file
+;     mov [cs:if_something_goes_wrong_unallocate_last_segment], 0
+;     mov ax, cs
+;     push ax
+;     push word .return
+;     mov ax, es
+;     push ax
+;     push word 0
+;     mov ax, cs
+;     mov es, ax
+;     lea si, [run_program_argument_buffer]
+;     mov dl, [es:ebr_drive_number]
+;     retf
+; .return:
+;     sub [cs:next_segment], 0x1000
+;     popa
+;     pop es
+;     pop ds
+;     ret
+
+; ds:si - filename
+; returns:
+;   al - exists (0 for no, 1 for yes)
+fat12_file_exists:
+    pusha
+
+    push ds
+    push es
+    mov ax, cs
+    mov es, ax
+
+    lea di, [fat12_read_file_filename]
+    mov cx, 11
+    rep movsb
+
+    mov ax, cs
+    mov ds, ax
+
+    call get_lba_and_size_of_root_dir
+    mov dl, [ebr_drive_number]
+    lea bx, [fat12_read_file_buffer]
+    call disk_read
+
+    xor bx, bx
+    lea di, [fat12_read_file_buffer]
+.search_file:
+    lea si, [fat12_read_file_filename]
+    mov cx, 11
+    push di
+    repe cmpsb
+    pop di
+    je .found_file
+
+    add di, 32
+    inc bx
+    cmp bx, [bdb_dir_entries_count]
+    jl .search_file
+
+    jmp .not_found
+.found_file:
+    pop es
+    pop ds
+    popa
+    mov al, 0x01
+    ret
+.not_found:
+    pop es
+    pop ds
+    popa
+    xor al, al
+    ret
+
+; ds:si - filename
+; returns:
+;   bx - block file was read to (convert it to usable segment with shift left 7 and add 0x2000)
+fat12_read_file_new:
+    pusha
+
+    push ds
+    push es
+    mov ax, cs
+    mov es, ax
+
+    lea di, [fat12_read_file_filename]
+    mov cx, 11
+    rep movsb
+    pop es
+
+    mov ax, cs
+    mov ds, ax
+    mov es, ax
+
+    call get_lba_and_size_of_root_dir
+    mov dl, [ebr_drive_number]
+    lea bx, [fat12_read_file_buffer]
+    call disk_read
+
+    xor bx, bx
+    lea di, [fat12_read_file_buffer]
+.search_kernel:
+    lea si, [fat12_read_file_filename]
+    mov cx, 11
+    push di
+    repe cmpsb
+    pop di
+    je .found_kernel
+
+    add di, 32
+    inc bx
+    cmp bx, [bdb_dir_entries_count]
+    jl .search_kernel
+
+    jmp kernel_not_found_error
+.found_kernel:
+    mov ax, [di + 26]
+    mov [fat12_read_file_file_cluster], ax
+    mov ecx, [di + 28]
+    add ecx, 2047
+    shr ecx, 11
+    call allocate_this_much
+    mov [fat12_read_file_block], bx
+    xor bx, bx
+    mov [fat12_read_file_offtemp], bx
+    mov bx, [fat12_read_file_block]
+    shl bx, 7
+    add bx, 0x2000 ; 0x2000 starts the free space
+    mov [fat12_read_file_segtemp], bx
+    xor ecx, ecx ; clear higher half of eax just for safety
+
+    mov ax, [bdb_reserved_sectors]
+    lea bx, [fat12_read_file_buffer]
+    mov cl, [bdb_sectors_per_fat]
+    mov dl, [ebr_drive_number]
+    call disk_read
+
+    mov bx, [fat12_read_file_segtemp]
+    mov es, bx
+    mov bx, [fat12_read_file_offtemp]
+.load_kernel_loop:
+    ;mov ax, [kernel_cluster]
+
+    ;add ax, 31 ; FIX THIS
+    xor ah, ah
+    mov al, [bdb_fat_count]
+    mov cx, [bdb_sectors_per_fat]
+    mul cx
+    mov cx, [bdb_dir_entries_count]
+    shr cx, 4
+    add ax, cx
+    dec ax
+    add ax, [fat12_read_file_file_cluster]
+
+    mov cl, 1
+    mov dl, [ebr_drive_number]
+    call disk_read
+
+    add bx, [bdb_bytes_per_sector]
+
+    mov ax, [fat12_read_file_file_cluster]
+    mov cx, 3
+    mul cx
+    mov cx, 2
+    div cx
+
+    lea si, [fat12_read_file_buffer]
+    add si, ax
+    mov ax, [ds:si]
+    
+    or dx, dx
+    jz .even
+.odd:
+    shr ax, 4
+    jmp .next_cluster_after
+.even:
+    and ax, 0x0fff
+.next_cluster_after:
+    cmp ax, 0x0ff8
+    jae .read_finish
+
+    mov [fat12_read_file_file_cluster], ax
+    jmp .load_kernel_loop
+.read_finish:
+    pop ds
+    popa
+    mov bx, [cs:fat12_read_file_block]
+    ret
+
+; ; ds:si - filename
+; ; es:bx - place to read to
+; fat12_read_file:
+;     pusha
+
+;     push ds
+;     push es
+;     mov ax, cs
+;     mov es, ax
+
+;     lea di, [fat12_read_file_filename]
+;     mov cx, 11
+;     rep movsb
+;     pop es
+
+;     mov ax, cs
+;     mov ds, ax
+
+;     mov [fat12_read_file_offtemp], bx
+;     mov bx, es
+;     mov [fat12_read_file_segtemp], bx
+
+;     mov es, ax
+
+;     call get_lba_and_size_of_root_dir
+;     mov dl, [ebr_drive_number]
+;     lea bx, [fat12_read_file_buffer]
+;     call disk_read
+
+;     xor bx, bx
+;     lea di, [fat12_read_file_buffer]
+; .search_kernel:
+;     lea si, [fat12_read_file_filename]
+;     mov cx, 11
+;     push di
+;     repe cmpsb
+;     pop di
+;     je .found_kernel
+
+;     add di, 32
+;     inc bx
+;     cmp bx, [bdb_dir_entries_count]
+;     jl .search_kernel
+
+;     jmp kernel_not_found_error
+; .found_kernel:
+;     mov ax, [di + 26]
+;     mov [fat12_read_file_file_cluster], ax
+
+;     mov ax, [bdb_reserved_sectors]
+;     lea bx, [fat12_read_file_buffer]
+;     mov cl, [bdb_sectors_per_fat]
+;     mov dl, [ebr_drive_number]
+;     call disk_read
+
+;     mov bx, [fat12_read_file_segtemp]
+;     mov es, bx
+;     mov bx, [fat12_read_file_offtemp]
+; .load_kernel_loop:
+;     ;mov ax, [kernel_cluster]
+
+;     ;add ax, 31 ; FIX THIS
+;     xor ah, ah
+;     mov al, [bdb_fat_count]
+;     mov cx, [bdb_sectors_per_fat]
+;     mul cx
+;     mov cx, [bdb_dir_entries_count]
+;     shr cx, 4
+;     add ax, cx
+;     dec ax
+;     add ax, [fat12_read_file_file_cluster]
+
+;     mov cl, 1
+;     mov dl, [ebr_drive_number]
+;     call disk_read
+
+;     add bx, [bdb_bytes_per_sector]
+
+;     mov ax, [fat12_read_file_file_cluster]
+;     mov cx, 3
+;     mul cx
+;     mov cx, 2
+;     div cx
+
+;     lea si, [fat12_read_file_buffer]
+;     add si, ax
+;     mov ax, [ds:si]
+    
+;     or dx, dx
+;     jz .even
+; .odd:
+;     shr ax, 4
+;     jmp .next_cluster_after
+; .even:
+;     and ax, 0x0fff
+; .next_cluster_after:
+;     cmp ax, 0x0ff8
+;     jae .read_finish
+
+;     mov [fat12_read_file_file_cluster], ax
+;     jmp .load_kernel_loop
+; .read_finish:
+;     pop ds
+;     popa
+;     ret
+
+get_lba_and_size_of_root_dir:
+    push bx
+    push dx
+    mov ax, [cs:bdb_sectors_per_fat]
+    mov bl, [cs:bdb_fat_count]
+    xor bh, bh
+    mul bx
+    add ax, [cs:bdb_reserved_sectors]
+    push ax
+
+    mov ax, [cs:bdb_dir_entries_count]
+    shl ax, 5
+    xor dx, dx
+    div word [cs:bdb_bytes_per_sector]
+
+    test dx, dx
+    jz .root_dir_after
+    inc ax
+.root_dir_after:
+    mov cl, al
+    pop ax
+    pop dx
+    pop bx
+    mov bx, [cs:bdb_dir_entries_count]
+    ret
+
+; dl - drive
+load_fat12_info:
+    pusha
+    push ds
+    push es
+    mov ax, cs
+    mov ds, ax
+    mov es, ax
+    mov ah, 0x02
+    mov al, 1
+    xor ch, ch
+    mov cl, 1
+    xor dh, dh
+    lea bx, [bdb]
+    int 0x13
+    pop es
+    pop ds
+    popa
+    ret
+
+; Converts an LBA address to a CHS address
+; Parameters:
+;   - ax: LBA address
+; Returns:
+;   - cx [bits 0-5]: sector number
+;   - cx [bits 6-15]: cylinder
+;   - dh: head
+lba_to_chs:
+
+    push ax
+    push dx
+
+    ; dx = 0
+    xor dx, dx
+    ; ax = LBA / SectorsPerTrack
+    div word [cs:bdb_sectors_per_track]
+                                        ; dx = LBA % SectorsPerTrack
+
+    ; dx = (LBA % SectorsPerTrack + 1) = sector
+    inc dx
+    ; cx = sector
+    mov cx, dx
+
+    ; dx = 0
+    xor dx, dx
+    ; ax = (LBA / SectorsPerTrack) / Heads = cylinder
+    div word [cs:bdb_heads]
+                                        ; dx = (LBA / SectorsPerTrack) % Heads = head
+    ; dh = head
+    mov dh, dl
+    ; ch = cylinder (lower 8 bits)
+    mov ch, al
+    push cx
+    mov cl, 6
+    shl ah, cl
+    pop cx
+    ; put upper 2 bits of cylinder in CL
+    or cl, ah
+
+    pop ax
+    ; restore DL
+    mov dl, al
+    pop ax
+    ret
+
+; same as disk_read but bp is lba instead of ax and drive is always current loaded drive
+disk_read_interrupt_wrapper:
+    push ax
+    push dx
+    mov ax, bp
+    mov dl, [cs:ebr_drive_number]
+    call disk_read
+    pop dx
+    pop ax
+    ret    
+
+; Reads sectors from a disk
+; Parameters:
+;   - ax: LBA address
+;   - cl: number of sectors to read (up to 128)
+;   - dl: drive number
+;   - es:bx: memory address where to store read data
+disk_read:
+
+    ; save registers we will modify
+    push ax
+    push bx
+    push cx
+    push dx
+    push di
+
+    ; temporarily save CL (number of sectors to read)
+    push cx
+    ; compute CHS
+    call lba_to_chs
+    ; AL = number of sectors to read
+    pop ax
+
+    mov ah, 0x02
+    ; retry count
+    mov di, 3
+
+.retry:
+    ; save all registers, we don't know what bios modifies
+    pusha
+    ; set carry flag, some BIOS'es don't set it
+    stc
+    ; carry flag cleared = success
+    int 0x13
+    ; jump if carry not set
+    jnc .done
+
+    ; read failed
+    popa ; macro
+    call disk_reset
+
+    dec di
+    test di, di
+    jnz .retry
+
+.fail:
+    ; all attempts are exhausted
+    jmp floppy_error
+
+.done:
+    popa
+
+    pop di
+    pop dx
+    pop cx
+    pop bx
+    ; restore registers modified
+    pop ax
+    ret
+
+; Resets disk controller
+; Parameters:
+;   - dl: drive number
+disk_reset:
+    pusha
+    xor ah, ah
+    stc
+    int 0x13
+    jc floppy_error
+    popa
+    ret
+
+kernel_not_found_error:
+    lea si, [msg_err_missing]
+    jmp error
+
+floppy_error:
+    lea si, [msg_err_floppy]
+
+error:
+    mov ax, cs
+    mov ds, ax
+    call puts
+
+    mov al, [cs:deadly_errors]
+    cmp al, 1
+    jne .return
+
+    cli
+    hlt
+.return:
+    mov sp, [cs:int_stack]
+    mov ax, [cs:int_ds]
+    mov ds, ax
+    mov ax, [cs:int_es]
+    mov es, ax
+    push ax
+    mov al, [cs:if_something_goes_wrong_unallocate_last_segment]
+    test al, al
+    jz .do_not_unallocate
+    sub [cs:next_segment], 0x1000
+.do_not_unallocate:
+    pop ax
+    iret
+
+kernel_panic:
+    mov ax, cs
+    mov ds, ax
+    lea si, [msg_err_oom]
+    call puts
+    call puts
+    call puts
+
+    cli
+    hlt
+
+stub:
+    ret
+
+int21:
+    push si
+    push ax
+    mov al, ah
+    xor ah, ah
+    mov si, ax
+    pop ax
+    shl si, 1
+    push ax
+    mov ax, [cs:.call_table+si]
+    mov [cs:call_value], ax
+    mov ax, ds
+    mov [cs:int_ds], ax
+    mov ax, es
+    mov [cs:int_es], ax
+    pop ax
+    pop si
+    mov [cs:int_stack], sp
+    call word [cs:call_value]
+    iret
+.call_table:
+    dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, disk_read_interrupt_wrapper, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate
+    dw (256-($-.call_table))/2 dup(stub)
+
+msg_kernel_startup db "Stannum kernel 0.01_prealpha1", 0x0d, 0x0a
+                    file 'info.txt'
+                    db 0
+msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0d, 0x0a, 0
+msg_patching db "Patching the IVT", 0x0d, 0x0a, 0
+
+msg_err_floppy db "Disk error", 0x0d, 0x0a, 0
+msg_err_missing db "File not found", 0x0d, 0x0a, 0
+msg_err_oom db "Kernel panicing: out of memory", 0x0d, 0x0a, 0
+
+file_eek_txt db "EEK     TXT"
+file_scli_com db "SCLI    COM"
+
+newline db 0x0d, 0x0a, 0
+
+db "Notosoft Stannum Kernel", 0x0a, 0x0d
+db "i was here 5.12.2026"
+
+reupload db 0
+
+deadly_errors db 1
+
+next_segment dw 0x2000
+
+int_stack dw ?
+int_ds dw ?
+int_es dw ?
+
+if_something_goes_wrong_unallocate_last_segment db ?
+
+boot_disk db ?
+
+call_value dw ?
+
+TOTAL_MEM_BLOCKS = (640 - (64 * (2 + 2 + 1))) / 2 
+                ; (Low memory [640KiB] - (Segment size [64KiB] * (1 [BDA + bootloader] + 1 [Kernel reserved] + 1 [Stack segment] + 2 [EBDA])) / 2KiB
+                ; Gets the amount of free space left in KiB, divides by 2KiB (the block allocator cluster size)
+mem_blocks db TOTAL_MEM_BLOCKS dup(?)
+
+smallest_mem_block dw ?
+smallest_mem_block_size db ?
+desired_size db ?
+
+fat12_read_file_segtemp dw ?
+fat12_read_file_offtemp dw ?
+fat12_read_file_filename db 11 dup(?)
+fat12_read_file_file_cluster dw ?
+fat12_read_file_block dw ?
+fat12_read_file_buffer db 8192 dup(?)
+
+run_program_argument_buffer db 128 dup(?)
+
+label bdb
+db 3 dup(?)
+bdb_oem:                    db 8 dup(?)
+bdb_bytes_per_sector:       dw ?
+bdb_sectors_per_cluster:    db ?
+bdb_reserved_sectors:       dw ?
+bdb_fat_count:              db ?
+bdb_dir_entries_count:      dw ?
+bdb_total_sectors:          dw ?
+bdb_media_descriptor_type:  db ?
+bdb_sectors_per_fat:        dw ?
+bdb_sectors_per_track:      dw ?
+bdb_heads:                  dw ?
+bdb_hidden_sectors:         dd ?
+bdb_large_sector_count:     dd ?
+
+ebr_drive_number:           db ?
+                            db ?
+ebr_signature:              db ?
+ebr_volume_id:              dd ?
+ebr_volume_label:           db 11 dup(?)
+ebr_system_id:              db 8 dup(?)

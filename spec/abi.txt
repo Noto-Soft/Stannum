@@ -1,0 +1,7 @@
+Every executable: flat binary loaded at offset 0 of some segment
+drivers: later
+Executable arguments passed in through es:si at start, arbitrary length
+No standard way to return data (yet)
+
+Programs ran through a kernel function that loads them into memory
+and far calls them, they far return

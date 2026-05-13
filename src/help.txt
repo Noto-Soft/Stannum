@@ -1,0 +1,25 @@
+You are using SCLi (Stannum Command Line)
+
+SCLi built in commands:
+    * clear - Clears the screen
+    * exit - Exits SCLi (From the initial SCLi process, this returns to
+                            kernel, which does nothing useful)
+    * help - Displays this message
+    * reboot - Restarts the system
+    * shutdown - Halts your processor, making it safe to power off
+
+SCLi can also run .COM files, for example you can run "HELLO   COM," or just
+    "HELLO" to avoid typing out all those unnecessary spaces, or even just 
+    "hello" if you prefer to keep your voice down :)
+
+Standard executables that should ALWAYS be included in Stannum:
+    * DIR     COM
+    * HELLO   COM
+    * REPEAT  COM
+    * SCLI    COM (not runnable from inside itself)
+
+Of course, always run a quick "dir" to check first, maybe something new has
+    been added :)
+
+Stannum, as of writing this, uses the FAT12 file system, making it mountable
+    on operating systems such as (older) Windows, and UNIX-based OS'
