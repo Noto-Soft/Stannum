@@ -7,7 +7,6 @@ fasm src/kernel.asm build/kernel.bin
 fasm src/scli.asm build/scli.com
 fasm src/hello.asm build/hello.com
 fasm src/repeat.asm build/repeat.com
-fasm src/dir.asm build/dir.com
 fasm src/tell.asm build/tell.com
 fasm src/tsrtest.asm build/tsrtest.com
 
@@ -30,8 +29,6 @@ mcopy -i os.img build/hello.com "::hello.com"
 echo "[MCOPY] Wrote hello.com"
 mcopy -i os.img build/repeat.com "::repeat.com"
 echo "[MCOPY] Wrote repeat.com"
-mcopy -i os.img build/dir.com "::dir.com"
-echo "[MCOPY] Wrote dir.com"
 mcopy -i os.img build/tell.com "::tell.com"
 echo "[MCOPY] Wrote tell.com"
 mcopy -i os.img build/tsrtest.com "::tsrtest.com"

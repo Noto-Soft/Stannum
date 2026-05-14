@@ -81,6 +81,12 @@ parse:
     je clear
 
     lea si, [typing_buffer]
+    lea di, [cmd_string_dir]
+    mov cx, 4
+    repe cmpsb
+    je dir
+
+    lea si, [typing_buffer]
     lea di, [cmd_string_help]
     mov cx, 5
     repe cmpsb
@@ -109,34 +115,35 @@ parse:
     mov cx, 11
     rep stosb
 
-    ; check for COM program with matching name
-    ; move typing buffer to a new buffer, make uppercase, replace last 3 characters with COM
-    ; split the original typing buffer by the first space
     lea si, [typing_buffer]
     lea di, [filename_shenanigans]
-    mov cx, 11
+    xor bx, bx
+    mov cx, 12
 .move_loop_uppercase_if_lower_stop_copy_if_found_space:
     lodsb
     cmp al, " "
     je .stop_copy_if_found_space
-    cmp al, "a"
-    jnae .store
-    cmp al, "z"
-    jnbe .store
-    and al, 0xdf
-.store:
+    inc bx
     stosb
     loop .move_loop_uppercase_if_lower_stop_copy_if_found_space
 .stop_copy_if_found_space:
-    mov word [filename_shenanigans + 8], "CO"
-    mov byte [filename_shenanigans + 10], "M"
-
+    mov ah, 0x06
     lea si, [filename_shenanigans]
-    lea di, [file_scli_com]
-    mov cx, 11
-    repe cmpsb
-    je run_self_error
+    int 0x21
+    test al, al
+    jnz .look_for_first_space_else_zero
+    ; autocomplete .com extension
+    cmp bx, 8
+    ja error_not_file
+    mov word [filename_shenanigans + bx], ".C"
+    mov word [filename_shenanigans + bx + 2], "OM"
 
+    mov ah, 0x06
+    lea si, [filename_shenanigans]
+    int 0x21
+    test al, al
+    jz error_not_file
+.look_for_first_space_else_zero:
     lea bx, [typing_buffer]
     xor si, si
 .look_for_first_space_else_zero_loop:
@@ -159,13 +166,6 @@ parse:
     test al, al
     jz error_not_file
     mov ah, 0x02 ; run program
-    int 0x21
-
-    jmp prompt
-
-run_self_error:
-    xor ah, ah
-    lea si, [msg_err_runself]
     int 0x21
 
     jmp prompt
@@ -210,6 +210,34 @@ shutdown:
     cli
     hlt
 
+dir:
+    mov ah, 0x4
+    int 0x21
+    mov [entries], bx
+    mov bp, ax
+    mov ah, 0x5
+    lea bx, [buffer]
+    int 0x21
+
+    lea si, [buffer]
+    mov cx, [entries]
+.loop:
+    mov al, [si]
+    test al, al
+    jz .next_loop
+    cmp al, 0xe5
+    je .next_loop
+    mov byte [si + 11], 0x0d
+    mov byte [si + 12], 0x0a
+    mov byte [si + 13], 0
+    xor ah, ah
+    int 0x21
+.next_loop:
+    add si, 32
+    loop .loop
+
+    jmp prompt
+
 exit:
     retf
 
@@ -219,19 +247,21 @@ msg_safe db "It is now safe to turn off your computer.", 0
 msg_help file 'inc/help.txt'
 db 0
 
-msg_err_runself db "Attempted to run SCLI.COM while in SCLi", 0x0a, 0x0d, 0
 msg_err_not_file db "Not a valid command or executable. Run 'help' command", 0x0a, 0x0d, 0
-
-file_scli_com db "SCLI    COM"
 
 prompt_string db ">", 0
 
 cmd_string_clear db "clear "
+cmd_string_dir db "dir "
 cmd_string_exit db "exit "
 cmd_string_help db "help "
 cmd_string_mem db "mem "
 cmd_string_reboot db "reboot "
 cmd_string_shutdown db "shutdown "
 
-typing_buffer db 256 dup(?)
-filename_shenanigans db 11 dup(?)
+typing_buffer db 256 dup(0)
+filename_shenanigans db 12 dup(0)
+
+entries dw 0
+
+buffer db 8192 dup(0)

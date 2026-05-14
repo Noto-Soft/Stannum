@@ -1,19 +1,15 @@
-ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
-บ                                                                         บ
-บ You are using SCLi (Stannum Command Line)                               บ
-บ                                                                         บ
-บ SCLi built in commands:                                                 บ
-บ     * clear - Clears the screen                                         บ
-บ     * exit - Exits SCLi (From the initial SCLi process, this returns to บ
-บ                             kernel, which does nothing useful)          บ
-บ     * help - Displays this message                                      บ
-บ     * mem - Shows the status of each 2KiB memory block                  บ
-บ     * reboot - Restarts the system                                      บ
-บ     * shutdown - Halts your processor, making it safe to power off      บ
-บ                                                                         บ
-บ SCLi can also run .COM files, for example you can run "HELLO   COM," or บ
-บ     just "HELLO" to avoid typing out all those unnecessary spaces, or   บ
-บ     even just  "hello" if you prefer to keep your voice down :)         บ
-บ                                                                         บ
-ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+ษอออออออออออออออออออออออออออออป
+บ                             บ
+บ SCLi - Stannum Command Line บ
+บ                             บ
+บ Commands:                   บ
+บ  * clear                    บ
+บ  * dir                      บ
+บ  * exit                     บ
+บ  * help                     บ
+บ  * mem                      บ
+บ  * reboot                   บ
+บ  * shutdown                 บ
+บ                             บ
+ศอออออออออออออออออออออออออออออผ
 

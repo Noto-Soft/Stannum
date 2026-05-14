@@ -55,5 +55,5 @@ puts:
 
 annoying_message db "Hey ked! this is a test of tsr, see ked you left me but im still here", 0x0d, 0x0a, "gonna have to reboot to make me go away ked! or just keep adding more ked", 0x0a, 0x0d, "LULZ", 0x0a, 0x0d, 0
 
-offset_original dw ?
-segment_original dw ?
+offset_original dw 0
+segment_original dw 0

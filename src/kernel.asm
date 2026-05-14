@@ -179,6 +179,14 @@ stay_resident_after_terminate:
     pop bx
     ret
 
+; bx - block id
+; returns:
+;   bx - segment
+get_segment_from_block_id:
+    shl bx, 7
+    add bx, MEM_START
+    ret
+
 puts:
     push ax
     push bx
@@ -323,6 +331,90 @@ run_program_new:
     pop ds
     ret
 
+; take in a "broken" filename string and turn it into one we can read from fat12
+; example:
+;   "huh.com\0"    -> "HUH     COM"
+;   "WeIRd   CoM"  -> "WEIRD   COM"
+;   "ODD.COM    "  -> "ODD     COM"
+;   "EIGHTCHR.TXT" -> "EIGHTCHRTXT"
+; essentially: capitalizes and moves extensions back
+;               turns zeroes in to spaces
+;               if the filename goes over 11 characters than fix it (if even fixable)
+; throws error and puts a blank (11 spaces) string if:
+;   no extension supplied
+filename_fixup:
+    push ax
+    push cx
+    push si
+    push di
+    ; begin by capitalizing the name and turning any zero bytes into spaces
+    mov [fat12_read_file_got_zero], 0
+    lea si, [fat12_read_file_filename]
+    lea di, [fat12_read_file_filename]
+    mov cx, 12
+.capitalize_loop:
+    lodsb
+    cmp [fat12_read_file_got_zero], 1
+    je .put_zero
+    test al, al
+    jnz .dont_put_space
+    mov [fat12_read_file_got_zero], 1
+.put_zero:
+    mov al, " "
+    jmp .store_as_is
+.dont_put_space:
+    cmp al, "a"
+    jnae .store_as_is
+    cmp al, "z"
+    jnbe .store_as_is
+    and al, 0xdf
+.store_as_is:
+    stosb
+    loop .capitalize_loop
+    ; next detect if there is a dot character between characters 1 and 8 inclusive
+    lea si, [fat12_read_file_filename + 1]
+    mov cx, 7
+.find_dot_extension:
+    lodsb
+    cmp al, "."
+    je .found_dot
+    loop .find_dot_extension
+    ; i got nothing
+    ; check we indeed HAVE an extension
+    mov al, [fat12_read_file_filename + 8]
+    cmp al, " "
+    jne .done ; we do
+
+    ; otherwise we do not and empty out the file so the read fails!!
+    mov al, " "
+    mov cx, 11
+    lea di, [fat12_read_file_filename]
+    rep movsb
+    jmp .done
+.found_dot:
+    ; now we move the extension back, removing the dot and the first extension
+    lea di, [fat12_read_file_extension_buffer]
+    ; si already at the start of the extension
+    mov cx, 3
+    rep movsb ; move extension over to buffer
+
+    mov al, " "
+    mov cx, 4
+    mov di, si
+    sub di, 4 ; remove the 3 bytes we just read, remove the dot too
+    rep stosb ; clear .EXT
+
+    lea si, [fat12_read_file_extension_buffer]
+    lea di, [fat12_read_file_filename + 8]
+    mov cx, 3
+    rep movsb ; move our new extension back here
+.done:
+    pop di
+    pop si
+    pop cx
+    pop ax
+    ret
+
 ; ds:si - filename
 ; returns:
 ;   al - exists (0 for no, 1 for yes)
@@ -335,11 +427,13 @@ fat12_file_exists:
     mov es, ax
 
     lea di, [fat12_read_file_filename]
-    mov cx, 11
+    mov cx, 12 ; load an extra byte to account for the possibility of a file with an 8 character name AND a dot for readability
     rep movsb
 
     mov ax, cs
     mov ds, ax
+
+    call filename_fixup
 
     call get_lba_and_size_of_root_dir
     mov dl, [ebr_drive_number]
@@ -382,18 +476,17 @@ fat12_read_file_new:
     pusha
 
     push ds
-    push es
     mov ax, cs
     mov es, ax
 
     lea di, [fat12_read_file_filename]
-    mov cx, 11
+    mov cx, 12 ; load an extra byte to account for the possibility of a file with an 8 character name AND a dot for readability
     rep movsb
-    pop es
 
     mov ax, cs
     mov ds, ax
-    mov es, ax
+
+    call filename_fixup
 
     call get_lba_and_size_of_root_dir
     mov dl, [ebr_drive_number]
@@ -724,10 +817,10 @@ int21:
     call word [cs:call_value]
     iret
 .call_table:
-    dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, disk_read_interrupt_wrapper, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate, putm
+    dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, disk_read_interrupt_wrapper, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id
     dw (256-($-.call_table))/2 dup(stub)
 
-msg_kernel_startup db "Stannum kernel 0.01_prealpha3", 0x0d, 0x0a
+msg_kernel_startup db "Stannum kernel 0.01_prealpha4", 0x0d, 0x0a
                     file 'inc/info.txt'
                     db 0
 msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0d, 0x0a, 0
@@ -738,7 +831,7 @@ msg_err_floppy db "Disk error", 0x0d, 0x0a, 0
 msg_err_missing db "File not found", 0x0d, 0x0a, 0
 msg_err_oom db "Kernel panicing: out of memory", 0x0d, 0x0a, 0
 
-file_scli_com db "SCLI    COM"
+file_scli_com db "SCLi.com", 0
 
 newline db 0x0d, 0x0a, 0
 
@@ -758,6 +851,7 @@ call_value dw ?
 TOTAL_MEM_BLOCKS = (640 - (64 * (2 + 2 + 1))) / 2 
                 ; (Low memory [640KiB] - (Segment size [64KiB] * (1 [BDA + bootloader] + 1 [Kernel reserved] + 1 [Stack segment] + 2 [EBDA])) / 2KiB
                 ; Gets the amount of free space left in KiB, divides by 2KiB (the block allocator cluster size)
+MEM_START = 0x2000
 mem_blocks db TOTAL_MEM_BLOCKS dup(?)
 
 smallest_mem_block dw ?
@@ -766,7 +860,9 @@ desired_size db ?
 
 fat12_read_file_segtemp dw ?
 fat12_read_file_offtemp dw ?
-fat12_read_file_filename db 11 dup(?)
+fat12_read_file_filename db 12 dup(?)
+fat12_read_file_extension_buffer db 3 dup(?)
+fat12_read_file_got_zero db ?
 fat12_read_file_file_cluster dw ?
 fat12_read_file_block dw ?
 fat12_read_file_buffer db 8192 dup(?)
