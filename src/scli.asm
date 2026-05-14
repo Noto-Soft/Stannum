@@ -184,8 +184,8 @@ clear:
     jmp prompt
 
 help:
-    ;mov ah, 0x07
-    ;int 0x21
+    mov ah, 0x07
+    int 0x21
 
     xor ah, ah
     lea si, [msg_help]
@@ -216,7 +216,7 @@ exit:
 msg_scli_startup db "SCLi -- Stannum Command Line", 0x0a, 0x0d, 0
 msg_safe db "It is now safe to turn off your computer.", 0
 
-msg_help file 'help.txt'
+msg_help file 'inc/help.txt'
 db 0
 
 msg_err_runself db "Attempted to run SCLI.COM while in SCLi", 0x0a, 0x0d, 0

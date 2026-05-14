@@ -15,13 +15,5 @@
 บ     just "HELLO" to avoid typing out all those unnecessary spaces, or   บ
 บ     even just  "hello" if you prefer to keep your voice down :)         บ
 บ                                                                         บ
-บ Standard executables that should ALWAYS be included in Stannum:         บ
-บ     * DIR     COM                                                       บ
-บ     * HELLO   COM                                                       บ
-บ     * REPEAT  COM                                                       บ
-บ     * SCLI    COM (not runnable from inside itself)                     บ
-บ                                                                         บ
-บ Of course, always run a quick "dir" to check first, maybe something new บ
-บ     has been added :)                                                   บ
-บ                                                                         บ
 ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+

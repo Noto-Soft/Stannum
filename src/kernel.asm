@@ -727,8 +727,8 @@ int21:
     dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, disk_read_interrupt_wrapper, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate, putm
     dw (256-($-.call_table))/2 dup(stub)
 
-msg_kernel_startup db "Stannum kernel 0.01_prealpha2", 0x0d, 0x0a
-                    file 'info.txt'
+msg_kernel_startup db "Stannum kernel 0.01_prealpha3", 0x0d, 0x0a
+                    file 'inc/info.txt'
                     db 0
 msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0d, 0x0a, 0
 msg_patching db "Patching the IVT", 0x0d, 0x0a, 0
