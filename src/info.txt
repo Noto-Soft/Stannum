@@ -1,18 +1,21 @@
-
-Stannum
-
-Stannum is a work-in-progress kernel with FAT12 support, and soon, maybe even
-file writing routines, runtime services, drivers, and all that fun stuff that
-makes usability
-
-Done:
-* Simple command line
-* Proper block allocation for programs and files
-
-Priority:
-* Better memory allocation system for programs instead of 6 fixed 64KiB chunks
-    * Terminate and stay resident
-* Subdirectories
-* File writing
-    * ed text editor
-
+ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บฐฐ      ฐฐฐ        ฐฐฐ      ฐฐฐ   ฐฐฐ  ฐฐ   ฐฐฐ  ฐฐ  ฐฐฐฐ  ฐฐ  ฐฐฐฐ  ฐบ
+บฑ  ฑฑฑฑฑฑฑฑฑฑฑ  ฑฑฑฑฑ  ฑฑฑฑ  ฑฑ    ฑฑ  ฑฑ    ฑฑ  ฑฑ  ฑฑฑฑ  ฑฑ   ฑฑ   ฑบ
+บฒฒ      ฒฒฒฒฒฒ  ฒฒฒฒฒ  ฒฒฒฒ  ฒฒ  ฒ  ฒ  ฒฒ  ฒ  ฒ  ฒฒ  ฒฒฒฒ  ฒฒ        ฒบ
+บÛÛÛÛÛÛÛ  ÛÛÛÛÛ  ÛÛÛÛÛ        ÛÛ  ÛÛ    ÛÛ  ÛÛ    ÛÛ  ÛÛÛÛ  ÛÛ  Û  Û  Ûบ
+บÛÛ      ÛÛÛÛÛÛ  ÛÛÛÛÛ  ÛÛÛÛ  ÛÛ  ÛÛÛ   ÛÛ  ÛÛÛ   ÛÛÛ      ÛÛÛ  ÛÛÛÛ  Ûบ
+บ                                                                      บ
+บ Stannum is a work-in-progress kernel with FAT12 support              บ
+บ                                                                      บ
+บ Done:                                                                บ
+บ * Simple command line                                                บ
+บ * Proper block allocation for programs and files                     บ
+บ     * Terminate and stay resident                                    บ
+บ                                                                      บ
+บ Priority:                                                            บ
+บ                                                                      บ
+บ * Subdirectories                                                     บ
+บ * File writing                                                       บ
+บ   * Implentation of "ed" text editor (THE standard text editor)      บ
+บ                                                                      บ
+ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ

@@ -1,25 +1,27 @@
-You are using SCLi (Stannum Command Line)
-
-SCLi built in commands:
-    * clear - Clears the screen
-    * exit - Exits SCLi (From the initial SCLi process, this returns to
-                            kernel, which does nothing useful)
-    * help - Displays this message
-    * reboot - Restarts the system
-    * shutdown - Halts your processor, making it safe to power off
-
-SCLi can also run .COM files, for example you can run "HELLO   COM," or just
-    "HELLO" to avoid typing out all those unnecessary spaces, or even just 
-    "hello" if you prefer to keep your voice down :)
-
-Standard executables that should ALWAYS be included in Stannum:
-    * DIR     COM
-    * HELLO   COM
-    * REPEAT  COM
-    * SCLI    COM (not runnable from inside itself)
-
-Of course, always run a quick "dir" to check first, maybe something new has
-    been added :)
-
-Stannum, as of writing this, uses the FAT12 file system, making it mountable
-    on operating systems such as (older) Windows, and UNIX-based OS'
+ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+บ                                                                         บ
+บ You are using SCLi (Stannum Command Line)                               บ
+บ                                                                         บ
+บ SCLi built in commands:                                                 บ
+บ     * clear - Clears the screen                                         บ
+บ     * exit - Exits SCLi (From the initial SCLi process, this returns to บ
+บ                             kernel, which does nothing useful)          บ
+บ     * help - Displays this message                                      บ
+บ     * mem - Shows the status of each 2KiB memory block                  บ
+บ     * reboot - Restarts the system                                      บ
+บ     * shutdown - Halts your processor, making it safe to power off      บ
+บ                                                                         บ
+บ SCLi can also run .COM files, for example you can run "HELLO   COM," or บ
+บ     just "HELLO" to avoid typing out all those unnecessary spaces, or   บ
+บ     even just  "hello" if you prefer to keep your voice down :)         บ
+บ                                                                         บ
+บ Standard executables that should ALWAYS be included in Stannum:         บ
+บ     * DIR     COM                                                       บ
+บ     * HELLO   COM                                                       บ
+บ     * REPEAT  COM                                                       บ
+บ     * SCLI    COM (not runnable from inside itself)                     บ
+บ                                                                         บ
+บ Of course, always run a quick "dir" to check first, maybe something new บ
+บ     has been added :)                                                   บ
+บ                                                                         บ
+ศอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ

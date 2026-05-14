@@ -98,6 +98,12 @@ parse:
     repe cmpsb
     je shutdown
 
+    lea si, [typing_buffer]
+    lea di, [cmd_string_mem]
+    mov cx, 4
+    repe cmpsb
+    je mem
+
     mov al, " "
     lea di, [filename_shenanigans]
     mov cx, 11
@@ -178,11 +184,17 @@ clear:
     jmp prompt
 
 help:
-    mov ah, 0x07
-    int 0x21
+    ;mov ah, 0x07
+    ;int 0x21
 
     xor ah, ah
     lea si, [msg_help]
+    int 0x21
+
+    jmp prompt
+
+mem:
+    mov ah, 0x0a
     int 0x21
 
     jmp prompt
@@ -217,6 +229,7 @@ prompt_string db ">", 0
 cmd_string_clear db "clear "
 cmd_string_exit db "exit "
 cmd_string_help db "help "
+cmd_string_mem db "mem "
 cmd_string_reboot db "reboot "
 cmd_string_shutdown db "shutdown "
 
