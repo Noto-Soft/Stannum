@@ -39,9 +39,6 @@ main:
     lea di, [mem_blocks]
     rep stosb
 
-    mov bl, 0x1f
-    call clear_color
-
     lea si, [file_scli_com]
     xor bx, bx
     call run_program_new
