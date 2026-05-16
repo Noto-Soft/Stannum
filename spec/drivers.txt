@@ -1,0 +1,6 @@
+for drivers:
+use software interrupts 0x30+
+always make sure you jump to whatever vector you replaced once done checking for your driver function numbers
+be as careful as possible not to cause any overlap issues
+
+you CAN also wrap hardware interrupts like 0x10 but NEVER overwrite them

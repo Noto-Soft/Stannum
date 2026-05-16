@@ -214,10 +214,8 @@ dir:
     mov ah, 0x4
     int 0x21
     mov [entries], bx
-    mov bp, ax
-    mov ah, 0x5
     lea bx, [buffer]
-    int 0x21
+    int 0x22
 
     lea si, [buffer]
     mov cx, [entries]

@@ -28,19 +28,34 @@ main:
     mov es, ax
     mov ax, cs
     patch 0x21, int21, ax
+    patch 0x22, disk_read_interrupt_wrapper, ax
     pop es
 
     mov [deadly_errors], 0
-
-    ; done printing startup messages
-    ; put newline for spacing idk look good
-    lea si, [newline]
-    call puts
 
     xor al, al
     mov cx, MEM_BLOCKS
     lea di, [mem_blocks]
     rep stosb
+
+    lea si, [msg_loading_serial]
+    call puts
+
+    lea si, [file_serial_drv]
+    xor bx, bx
+    call run_program_new
+
+    lea si, [msg_loading_pcspk]
+    call puts
+
+    lea si, [file_pcspk_drv]
+    xor bx, bx
+    call run_program_new
+
+    ; done printing startup messages
+    ; put newline for spacing idk look good
+    lea si, [newline]
+    call puts
 
     lea si, [file_scli_com]
     xor bx, bx
@@ -167,19 +182,28 @@ get_smallest_contiguous_free_memory_above_size:
     pop ax
     ret
 
-; es - segment of the program wishing to stay resident (only the first 2KiB will be resident so plan accordingly)
+; cs - segment of the program wishing to stay resident (the entire program will stay resident. scary)
 stay_resident_after_terminate:
+    push ax
     push bx
 
-    mov bx, es
+    mov bx, [cs:int_stack]
+    mov bx, [ss:bx + 2]
     sub bx, 0x2000
     shr bx, 7
     
-    call deallocate ; deallocate file
-    ; reallocate just the first 2KiB block
+.until_found_end:
+    mov al, [cs:mem_blocks + bx]
+    cmp al, 0xff
+    je .found_end
+    mov byte [cs:mem_blocks + bx], 0xf9 ; resident program
+    inc bx
+    jmp .until_found_end
+.found_end:
     mov byte [cs:mem_blocks + bx], 0xf9 ; resident program
 
     pop bx
+    pop ax
     ret
 
 ; bx - block id
@@ -212,7 +236,7 @@ reset_vga:
     pusha
     mov ax, 0x0003
     int 0x10
-    mov ax, 0x1111
+    mov ax, 0x1112
     xor bl, bl
     int 0x10
     popa
@@ -679,14 +703,8 @@ lba_to_chs:
 
 ; same as disk_read but bp is lba instead of ax and drive is always current loaded drive
 disk_read_interrupt_wrapper:
-    push ax
-    push dx
-    mov ax, bp
-    mov dl, [cs:ebr_drive_number]
     call disk_read
-    pop dx
-    pop ax
-    ret    
+    iret    
 
 ; Reads sectors from a disk
 ; Parameters:
@@ -820,20 +838,24 @@ int21:
     call word [cs:call_value]
     iret
 .call_table:
-    dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, disk_read_interrupt_wrapper, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id
+    dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, stub, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id
     dw (256-($-.call_table))/2 dup(stub)
 
-msg_kernel_startup db "Stannum kernel 0.01_prealpha5", 0x0d, 0x0a
+msg_kernel_startup db "Stannum kernel 0.01", 0x0d, 0x0a
                     file 'inc/info.txt'
                     db 0
 msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0d, 0x0a, 0
 msg_patching db "Patching the IVT", 0x0d, 0x0a, 0
+msg_loading_serial db "Loading serial I/O driver", 0x0d, 0x0a, 0
+msg_loading_pcspk db "Loading PC speaker driver", 0x0d, 0x0a, 0
 msg_putm_guide db "each character represents the state of a 2KiB block of memory", 0x0d, 0x0a, "Legend:", 0x0d, 0x0a, ". = free", 0x0d, 0x0a, "^ = taken", 0x0d, 0x0a, "$ = end of chunk", 0x0d, 0x0a, "* = resident", 0x0d, 0x0a, 0x0a, 0
 
 msg_err_floppy db "Disk error", 0x0d, 0x0a, 0
 msg_err_missing db "File not found", 0x0d, 0x0a, 0
 msg_err_oom db "Kernel panicing: out of memory", 0x0d, 0x0a, 0
 
+file_serial_drv db "serial.drv", 0
+file_pcspk_drv db "pcspk.drv", 0
 file_scli_com db "SCLi.com", 0
 
 newline db 0x0d, 0x0a, 0

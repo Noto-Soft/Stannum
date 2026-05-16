@@ -1,15 +1,13 @@
-ษอออออออออออออออออออออออออออออป
-บ                             บ
-บ SCLi - Stannum Command Line บ
-บ                             บ
-บ Commands:                   บ
-บ  * clear                    บ
-บ  * dir                      บ
-บ  * exit                     บ
-บ  * help                     บ
-บ  * mem                      บ
-บ  * reboot                   บ
-บ  * shutdown                 บ
-บ                             บ
-ศอออออออออออออออออออออออออออออผ
+ษอออออออออออออออออออออออออออป
+บSCLi - Stannum Command Lineบ
+บ                           บ
+บCommands:                  บ
+บ  * clear                  บ
+บ  * dir                    บ
+บ  * exit                   บ
+บ  * help                   บ
+บ  * mem                    บ
+บ  * reboot                 บ
+บ  * shutdown               บ
+ศอออออออออออออออออออออออออออผ
 
