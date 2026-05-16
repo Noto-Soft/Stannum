@@ -34,8 +34,10 @@ echo "[MCOPY] Wrote tell.com"
 mcopy -i os.img build/tsrtest.com "::tsrtest.com"
 echo "[MCOPY] Wrote tsrtest.com"
 
-mcopy -i os.img src/blep.txt "::blep.txt"
-echo "[MCOPY] Wrote blep.txt"
+mcopy -i os.img src/reminder.txt "::reminder.txt"
+echo "[MCOPY] Wrote reminder.txt"
+mcopy -i os.img src/woohey.txt "::woohey.txt"
+echo "[MCOPY] Wrote woohey.txt"
 
 if [[ "$1" == "test" ]]; then
     qemu-system-i386 --drive file=os.img,if=floppy,format=raw

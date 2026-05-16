@@ -10,6 +10,9 @@ main:
     mov ds, ax
     mov es, ax
 
+    mov ss, ax
+    lea sp, [stack_top]
+
     call load_fat12_info
 
     call reset_vga
@@ -35,7 +38,7 @@ main:
     call puts
 
     xor al, al
-    mov cx, TOTAL_MEM_BLOCKS
+    mov cx, MEM_BLOCKS
     lea di, [mem_blocks]
     rep stosb
 
@@ -132,7 +135,7 @@ get_smallest_contiguous_free_memory_above_size:
     xor si, si ; si will contain the current one
     xor cl, cl ; cl will contain the size just for simplicity, could be done using maths though (ew)
 .go_over_blocks:
-    cmp si, TOTAL_MEM_BLOCKS
+    cmp si, MEM_BLOCKS
     je .block_taken
     ja .done_looking
     mov al, [mem_blocks + si]
@@ -264,7 +267,7 @@ putm:
     inc cx
 .skip_useless_cx_increment_ya:
     inc si
-    cmp si, TOTAL_MEM_BLOCKS
+    cmp si, MEM_BLOCKS
     jae .done
     jmp .loop
 .done:
@@ -373,7 +376,7 @@ filename_fixup:
     loop .capitalize_loop
     ; next detect if there is a dot character between characters 1 and 8 inclusive
     lea si, [fat12_read_file_filename + 1]
-    mov cx, 7
+    mov cx, 8
 .find_dot_extension:
     lodsb
     cmp al, "."
@@ -820,7 +823,7 @@ int21:
     dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, disk_read_interrupt_wrapper, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id
     dw (256-($-.call_table))/2 dup(stub)
 
-msg_kernel_startup db "Stannum kernel 0.01_prealpha4", 0x0d, 0x0a
+msg_kernel_startup db "Stannum kernel 0.01_prealpha5", 0x0d, 0x0a
                     file 'inc/info.txt'
                     db 0
 msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0d, 0x0a, 0
@@ -848,11 +851,11 @@ int_es dw ?
 
 call_value dw ?
 
-TOTAL_MEM_BLOCKS = (640 - (64 * (2 + 2 + 1))) / 2 
-                ; (Low memory [640KiB] - (Segment size [64KiB] * (1 [BDA + bootloader] + 1 [Kernel reserved] + 1 [Stack segment] + 2 [EBDA])) / 2KiB
+MEM_BLOCKS = (640 - (64 * (1 + 1 + 2))) / 2 
+                ; (Low memory [640KiB] - (Segment size [64KiB] * (1 [BDA + bootloader] + 1 [Kernel reserved] + 2 [EBDA])) / 2KiB
                 ; Gets the amount of free space left in KiB, divides by 2KiB (the block allocator cluster size)
 MEM_START = 0x2000
-mem_blocks db TOTAL_MEM_BLOCKS dup(?)
+mem_blocks db MEM_BLOCKS dup(?)
 
 smallest_mem_block dw ?
 smallest_mem_block_size db ?
@@ -891,3 +894,7 @@ ebr_signature:              db ?
 ebr_volume_id:              dd ?
 ebr_volume_label:           db 11 dup(?)
 ebr_system_id:              db 8 dup(?)
+
+align 16
+db 8192 dup(?)
+label stack_top
