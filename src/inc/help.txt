@@ -3,6 +3,7 @@
 º                           º
 ºCommands:                  º
 º  * clear                  º
+º  * del                    º
 º  * dir                    º
 º  * exit                   º
 º  * help                   º

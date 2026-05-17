@@ -5,12 +5,14 @@
 บÛÛÛÛÛÛÛ  ÛÛÛÛÛ  ÛÛÛÛÛ        ÛÛ  ÛÛ    ÛÛ  ÛÛ    ÛÛ  ÛÛÛÛ  ÛÛ  Û  Û  Ûบ
 บÛÛ      ÛÛÛÛÛÛ  ÛÛÛÛÛ  ÛÛÛÛ  ÛÛ  ÛÛÛ   ÛÛ  ÛÛÛ   ÛÛÛ      ÛÛÛ  ÛÛÛÛ  Ûบ
 บ                                                                      บ
-บStannum is a work-in-progress kernel with FAT12 support               บ
+บStannum kernel 1.0                                                    บ
 บ                                                                      บ
-บDone so far:                                                          บ
+บFeatures:                                                             บ
+บ* FAT12 file reading, writing, deleting                               บ
 บ* Simple command line                                                 บ
 บ* Proper block allocation for programs and files                      บ
 บ   * Terminate and stay resident                                      บ
 บ* Serial driver                                                       บ
 บ* PC speaker driver                                                   บ
+บ* Basic write-only text editor                                        บ
 ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ

@@ -11,6 +11,9 @@ fasm src/hello.asm build/hello.com
 fasm src/repeat.asm build/repeat.com
 fasm src/tell.asm build/tell.com
 fasm src/testsrl.asm build/testsrl.com
+fasm src/write.asm build/write.com
+
+# gcc -m16 -ffreestanding -nostdlib -fno-pie -fno-pic -Wl,--oformat=binary -s -o build/ctest.bin src/ctest.c
 
 touch os.img
 truncate -s 1440k os.img
@@ -28,12 +31,13 @@ mcopy -i os.img build/hello.com "::hello.com"
 mcopy -i os.img build/repeat.com "::repeat.com"
 mcopy -i os.img build/tell.com "::tell.com"
 mcopy -i os.img build/testsrl.com "::testsrl.com"
+mcopy -i os.img build/write.com "::write.com"
 
 mcopy -i os.img src/reminder.txt "::reminder.txt"
 mcopy -i os.img src/woohey.txt "::woohey.txt"
 
 if [[ "$1" == "test" ]]; then
-    qemu-system-i386 --drive file=os.img,if=floppy,format=raw -machine pcspk-audiodev=spk -audiodev pa,id=spk
+    qemu-system-i386 --drive file=os.img,if=floppy,format=raw -machine pcspk-audiodev=spk -audiodev pa,id=spk -vga std
 else
     echo "[build.sh] Run \"bash build.sh test\" to build and then boot into qemu (qemu-system-x86 package required)"
 fi

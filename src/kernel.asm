@@ -13,8 +13,6 @@ main:
     mov ss, ax
     lea sp, [stack_top]
 
-    call load_fat12_info
-
     call reset_vga
 
     lea si, [msg_kernel_startup]
@@ -29,6 +27,7 @@ main:
     mov ax, cs
     patch 0x21, int21, ax
     patch 0x22, disk_read_interrupt_wrapper, ax
+    patch 0x23, disk_write_interrupt_wrapper, ax
     pop es
 
     mov [deadly_errors], 0
@@ -38,19 +37,21 @@ main:
     lea di, [mem_blocks]
     rep stosb
 
+    call load_fat12_info
+
     lea si, [msg_loading_serial]
     call puts
 
     lea si, [file_serial_drv]
     xor bx, bx
-    call run_program_new
+    call run_program
 
     lea si, [msg_loading_pcspk]
     call puts
 
     lea si, [file_pcspk_drv]
     xor bx, bx
-    call run_program_new
+    call run_program
 
     ; done printing startup messages
     ; put newline for spacing idk look good
@@ -59,7 +60,7 @@ main:
 
     lea si, [file_scli_com]
     xor bx, bx
-    call run_program_new
+    call run_program
 
     lea si, [msg_kernel_done]
     call puts
@@ -214,6 +215,14 @@ get_segment_from_block_id:
     add bx, MEM_START
     ret
 
+; bx - segment
+; returns:
+;   bx - block id
+get_block_id_from_segment:
+    sub bx, MEM_START
+    shr bx, 7
+    ret
+
 puts:
     push ax
     push bx
@@ -239,6 +248,13 @@ reset_vga:
     mov ax, 0x1112
     xor bl, bl
     int 0x10
+    mov dx, 0x3c4
+    mov al, 0x01
+    out dx, al
+    inc dx
+    in al, dx
+    or al, 0x01
+    out dx, al
     popa
     ret
 
@@ -279,7 +295,7 @@ putm:
     mov al, "."
 .done_setting_al:
     int 0x10
-    cmp cx, 39
+    cmp cx, 23
     jne .no_newline
     mov al, 0x0d
     int 0x10
@@ -315,10 +331,77 @@ putm:
     pop ax
     ret
 
+; cl (low half) - nibble
+putn:
+    push ax
+    push bx
+    push cx
+    and cl, 0x0f
+    cmp cl, 0x09
+    jnbe .not_numeric
+    mov ah, 0x0e
+    mov al, cl
+    add al, "0"
+    xor bh, bh
+    int 0x10
+    pop cx
+    pop bx
+    pop ax
+    ret
+.not_numeric:
+    mov ah, 0x0e
+    mov al, cl
+    add al, "a" - 10
+    xor bh, bh
+    int 0x10
+    pop cx
+    pop bx
+    pop ax
+    ret
+
+; cl - byte
+putb:
+    push cx
+    shr cl, 4
+    call putn
+    pop cx
+    call putn
+    ret
+
+; cx - word
+putw:
+    push cx
+    mov cl, ch
+    call putb
+    pop cx
+    call putb
+    ret
+
+; prints the prefix followed by the 16 bit hex value, removing the leading byte if it is zero
+; "pretty hex"
+; cx - hex value
+put_hex:
+    push ax
+    push bx
+    mov ah, 0x0e
+    mov al, "0"
+    xor bh, bh
+    int 0x10
+    mov al, "x"
+    int 0x10
+    pop bx
+    pop ax
+    test ch, ch
+    jz .put_byte
+    call putw
+    ret
+.put_byte:
+    call putb
+    ret
 
 ; ds:si - program
 ; ds:bx - program arguments (null terminated, max 127 characters)
-run_program_new:
+run_program:
     push ds
     push es
     pusha
@@ -335,7 +418,7 @@ run_program_new:
     mov byte [es:run_program_argument_buffer + 127], 0
     popa
     pusha
-    call fat12_read_file_new
+    call fat12_read_file
     push bx
     mov ax, cs
     mov es, ax
@@ -376,8 +459,8 @@ filename_fixup:
     push di
     ; begin by capitalizing the name and turning any zero bytes into spaces
     mov [fat12_read_file_got_zero], 0
-    lea si, [fat12_read_file_filename]
-    lea di, [fat12_read_file_filename]
+    lea si, [fat12_filename]
+    lea di, [fat12_filename]
     mov cx, 12
 .capitalize_loop:
     lodsb
@@ -399,7 +482,7 @@ filename_fixup:
     stosb
     loop .capitalize_loop
     ; next detect if there is a dot character between characters 1 and 8 inclusive
-    lea si, [fat12_read_file_filename + 1]
+    lea si, [fat12_filename + 1]
     mov cx, 8
 .find_dot_extension:
     lodsb
@@ -408,14 +491,14 @@ filename_fixup:
     loop .find_dot_extension
     ; i got nothing
     ; check we indeed HAVE an extension
-    mov al, [fat12_read_file_filename + 8]
+    mov al, [fat12_filename + 8]
     cmp al, " "
     jne .done ; we do
 
     ; otherwise we do not and empty out the file so the read fails!!
     mov al, " "
     mov cx, 11
-    lea di, [fat12_read_file_filename]
+    lea di, [fat12_filename]
     rep movsb
     jmp .done
 .found_dot:
@@ -432,7 +515,7 @@ filename_fixup:
     rep stosb ; clear .EXT
 
     lea si, [fat12_read_file_extension_buffer]
-    lea di, [fat12_read_file_filename + 8]
+    lea di, [fat12_filename + 8]
     mov cx, 3
     rep movsb ; move our new extension back here
 .done:
@@ -445,6 +528,7 @@ filename_fixup:
 ; ds:si - filename
 ; returns:
 ;   al - exists (0 for no, 1 for yes)
+;   si - entry offset
 fat12_file_exists:
     pusha
 
@@ -453,7 +537,7 @@ fat12_file_exists:
     mov ax, cs
     mov es, ax
 
-    lea di, [fat12_read_file_filename]
+    lea di, [fat12_filename]
     mov cx, 12 ; load an extra byte to account for the possibility of a file with an 8 character name AND a dot for readability
     rep movsb
 
@@ -464,13 +548,13 @@ fat12_file_exists:
 
     call get_lba_and_size_of_root_dir
     mov dl, [ebr_drive_number]
-    lea bx, [fat12_read_file_buffer]
+    lea bx, [fat12_buffer]
     call disk_read
 
     xor bx, bx
-    lea di, [fat12_read_file_buffer]
+    lea di, [fat12_buffer]
 .search_file:
-    lea si, [fat12_read_file_filename]
+    lea si, [fat12_filename]
     mov cx, 11
     push di
     repe cmpsb
@@ -484,10 +568,13 @@ fat12_file_exists:
 
     jmp .not_found
 .found_file:
+    sub di, fat12_buffer
+    mov [fat12_file_entry_offset], di
     pop es
     pop ds
     popa
     mov al, 0x01
+    mov si, [fat12_file_entry_offset]
     ret
 .not_found:
     pop es
@@ -498,15 +585,16 @@ fat12_file_exists:
 
 ; ds:si - filename
 ; returns:
-;   bx - block file was read to (convert it to usable segment with shift left 7 and add 0x2000)
-fat12_read_file_new:
+;   ecx - size in bytes
+fat12_read_file_size:
     pusha
 
     push ds
+    push es
     mov ax, cs
     mov es, ax
 
-    lea di, [fat12_read_file_filename]
+    lea di, [fat12_filename]
     mov cx, 12 ; load an extra byte to account for the possibility of a file with an 8 character name AND a dot for readability
     rep movsb
 
@@ -517,13 +605,66 @@ fat12_read_file_new:
 
     call get_lba_and_size_of_root_dir
     mov dl, [ebr_drive_number]
-    lea bx, [fat12_read_file_buffer]
+    lea bx, [fat12_buffer]
     call disk_read
 
     xor bx, bx
-    lea di, [fat12_read_file_buffer]
+    lea di, [fat12_buffer]
 .search_kernel:
-    lea si, [fat12_read_file_filename]
+    lea si, [fat12_filename]
+    mov cx, 11
+    push di
+    repe cmpsb
+    pop di
+    je .found_kernel
+
+    add di, 32
+    inc bx
+    cmp bx, [bdb_dir_entries_count]
+    jl .search_kernel
+
+    jmp kernel_not_found_error
+.found_kernel:
+    mov ax, [di + 26]
+    mov [fat12_read_file_file_cluster], ax
+    mov ecx, [di + 28]
+    mov [fat12_read_file_size_filesize], ecx
+
+    pop es
+    pop ds
+    popa
+    mov ecx, [fat12_read_file_size_filesize]
+    ret
+
+; ds:si - filename
+; returns:
+;   bx - block file was read to (convert it to usable segment with shift left 7 and add 0x2000)
+fat12_read_file:
+    pusha
+
+    push ds
+    push es
+    mov ax, cs
+    mov es, ax
+
+    lea di, [fat12_filename]
+    mov cx, 12 ; load an extra byte to account for the possibility of a file with an 8 character name AND a dot for readability
+    rep movsb
+
+    mov ax, cs
+    mov ds, ax
+
+    call filename_fixup
+
+    call get_lba_and_size_of_root_dir
+    mov dl, [ebr_drive_number]
+    lea bx, [fat12_buffer]
+    call disk_read
+
+    xor bx, bx
+    lea di, [fat12_buffer]
+.search_kernel:
+    lea si, [fat12_filename]
     mov cx, 11
     push di
     repe cmpsb
@@ -552,27 +693,13 @@ fat12_read_file_new:
     mov [fat12_read_file_segtemp], bx
     xor ecx, ecx ; clear higher half of eax just for safety
 
-    mov ax, [bdb_reserved_sectors]
-    lea bx, [fat12_read_file_buffer]
-    mov cl, [bdb_sectors_per_fat]
-    mov dl, [ebr_drive_number]
-    call disk_read
+    call fat12_read_fat
 
     mov bx, [fat12_read_file_segtemp]
     mov es, bx
     mov bx, [fat12_read_file_offtemp]
 .load_kernel_loop:
-    ;mov ax, [kernel_cluster]
-
-    ;add ax, 31 ; FIX THIS
-    xor ah, ah
-    mov al, [bdb_fat_count]
-    mov cx, [bdb_sectors_per_fat]
-    mul cx
-    mov cx, [bdb_dir_entries_count]
-    shr cx, 4
-    add ax, cx
-    dec ax
+    call fat12_get_data_start
     add ax, [fat12_read_file_file_cluster]
 
     mov cl, 1
@@ -587,7 +714,7 @@ fat12_read_file_new:
     mov cx, 2
     div cx
 
-    lea si, [fat12_read_file_buffer]
+    lea si, [fat12_buffer]
     add si, ax
     mov ax, [ds:si]
     
@@ -605,6 +732,7 @@ fat12_read_file_new:
     mov [fat12_read_file_file_cluster], ax
     jmp .load_kernel_loop
 .read_finish:
+    pop es
     pop ds
     popa
     mov bx, [cs:fat12_read_file_block]
@@ -651,6 +779,325 @@ load_fat12_info:
     xor dh, dh
     lea bx, [bdb]
     int 0x13
+    pop es
+    pop ds
+    popa
+    ret
+
+fat12_read_fat:
+    push ax
+    push bx
+    push dx
+    push cx
+    call fat12_disk_loc_fat
+    call disk_read
+    pop cx
+    pop dx
+    pop bx
+    pop ax
+    ret
+
+fat12_write_fat:
+    push ax
+    push bx
+    push dx
+    push cx
+    call fat12_disk_loc_fat
+    call disk_write
+    pop cx
+    pop dx
+    pop bx
+    pop ax
+    ret
+
+fat12_disk_loc_fat:
+    mov ax, [bdb_reserved_sectors]
+    lea bx, [fat12_buffer]
+    mov cl, [bdb_sectors_per_fat]
+    mov dl, [ebr_drive_number]
+    ret
+
+; ax - starting sector of data
+fat12_get_data_start:
+    xor ah, ah
+    mov al, [bdb_fat_count]
+    mov cx, [bdb_sectors_per_fat]
+    mul cx
+    mov cx, [bdb_dir_entries_count]
+    shr cx, 4
+    add ax, cx
+    dec ax
+    ret
+
+; returns offset of the first free entry in si, 0xffff if none
+fat12_first_free_entry:
+    push ax
+    push bx
+    push cx
+    call get_lba_and_size_of_root_dir
+    mov [fat12_first_free_entry_entries], bx
+    lea bx, [fat12_buffer]
+    mov dl, [ebr_drive_number]
+    call disk_read
+
+    xor si, si
+    mov cx, [fat12_first_free_entry_entries]
+.loop:
+    mov al, [fat12_buffer + si]
+    test al, al
+    jz .done
+    cmp al, 0xe5
+    je .done
+    add si, 32
+    loop .loop
+    mov si, 0xffff
+.done:
+    pop cx
+    pop bx
+    pop ax
+    ret
+
+; bx - starting cluster
+; ecx - size of file in bytes
+; ds:si - filename
+fat12_write_file_entry:
+    pusha
+    push ds
+    push es
+    push ecx
+    mov ax, cs
+    mov es, ax
+    lea di, [fat12_filename]
+    mov cx, 12
+    rep movsb
+    mov ax, cs
+    mov ds, ax
+    call filename_fixup
+    call fat12_first_free_entry
+    mov bp, si
+    lea si, [fat12_filename]
+    lea di, [fat12_buffer + bp]
+    mov cx, 11
+    rep movsb
+    mov word [fat12_buffer + bp + 26], bx
+    pop ecx
+    mov dword [fat12_buffer + bp + 28], ecx
+    call get_lba_and_size_of_root_dir
+    lea bx, [fat12_buffer]
+    call disk_write
+    pop es
+    pop ds
+    popa
+    ret
+
+; assumes fat is already loaded to buffer
+; ax - number of cluster
+; returns:
+;   ax - cluster value
+fat12_get_cluster:
+    ; offset = cluster# * 2
+    ; value = (cluster# & 0x01) ? table[offset] >> 4 : table[offset] & 0xfff
+
+    push dx
+    push si
+    mov [fat12_cluster_to_use], ax
+    shr ax, 1
+    add ax, [fat12_cluster_to_use]
+    mov si, ax
+    mov ax, word [fat12_buffer + si]
+    mov dx, [fat12_cluster_to_use]
+    and dx, 0x01
+    test dl, dl
+    jz .even
+.odd:
+    shr ax, 4
+    pop si
+    pop dx
+    ret
+.even:
+    and ax, 0x0fff
+    pop si
+    pop dx
+    ret
+
+; assumes fat is already loaded to buffer
+; ax - number of cluster
+; dx - cluster value
+fat12_set_cluster:
+    ; offset = cluster# * 2
+    ; out_value = (cluster# & 0x01) ? table[offset] & 0x000f | (in_value << 4) : table[offset] & 0xf000 | (in_value & 0x0fff)
+
+    push ax
+    push dx
+    push si
+    mov [fat12_cluster_to_use], ax
+    mov [fat12_new_cluster_value], dx
+    shr ax, 1
+    add ax, [fat12_cluster_to_use]
+    mov si, ax
+    mov ax, word [fat12_buffer + si]
+    mov dx, [fat12_cluster_to_use]
+    and dx, 0x01
+    test dl, dl
+    jz .even
+.odd:
+    and ax, 0x000f
+    mov dx, [fat12_new_cluster_value]
+    shl dx, 4
+    or ax, dx
+    mov word [fat12_buffer + si], ax
+    jmp .end
+.even:
+    and ax, 0xf000
+    mov dx, [fat12_new_cluster_value]
+    and dx, 0x0fff
+    or ax, dx
+    mov word [fat12_buffer + si], ax
+.end:
+    pop si
+    pop dx
+    pop ax
+    ret
+
+; returns:
+;   ax - first free cluster number, 0xffff if none
+fat12_get_free_cluster:
+    xor ax, ax
+.loop:
+    push ax
+    call fat12_get_cluster
+    test ax, ax
+    pop ax
+    jz .found
+    inc ax
+    cmp ax, 0x0fff
+    jna .loop
+    mov ax, 0xffff
+.found:
+    ret
+
+; bx - starting block of file
+; ecx - size in bytes
+; ds:si - filename
+fat12_write_file:
+    pusha
+    call fat12_delete_file ; delete file and its clusters if it exists
+    push ds
+    push es
+    mov ax, cs
+    mov ds, ax
+    mov es, ax
+
+    call get_segment_from_block_id
+    mov [fat12_write_file_segment], bx
+    mov word [fat12_write_file_offset], 0
+    mov [fat12_write_file_file_size], ecx
+    xor eax, eax
+    mov ax, [bdb_bytes_per_sector]
+    dec ax
+    add ecx, eax
+    mov ax, cx
+    shr ecx, 16
+    mov dx, cx
+    mov bx, [bdb_bytes_per_sector]
+    div bx
+    add ax, [bdb_sectors_per_cluster]
+    dec ax
+    xor bh, bh
+    mov bl, [bdb_sectors_per_cluster]
+    xor dx, dx
+    div bx
+    xor ah, ah
+    ; mov [fat12_write_file_clusters_to_write], al
+    xor ecx, ecx
+    mov cl, al
+
+    call fat12_read_fat
+
+    call fat12_get_free_cluster
+    cmp ax, 0xffff
+    je floppy_error
+    mov [fat12_write_file_base_cluster], ax
+.continue_writing:
+    mov dx, ax
+    mov ax, [fat12_write_file_last_cluster]
+    call fat12_set_cluster
+    mov ax, dx
+    mov [fat12_write_file_last_cluster], ax
+    mov dx, 0x0ff8
+    call fat12_set_cluster
+    
+    pusha
+    push es
+    mov ax, [fat12_write_file_segment]
+    mov es, ax
+    call fat12_get_data_start
+    add ax, [fat12_write_file_last_cluster]
+    mov cl, 1
+    mov dl, [ebr_drive_number]
+    mov bx, [fat12_write_file_offset]
+    call disk_write
+    add bx, 512
+    mov [fat12_write_file_offset], bx
+    pop es
+    popa
+
+    dec cl
+    test cl, cl
+    jz .done
+    call fat12_get_free_cluster
+    jmp .continue_writing
+.done:
+    call fat12_write_fat
+    mov bx, [fat12_write_file_base_cluster]
+    mov ecx, [fat12_write_file_file_size]
+    pop es
+    pop ds
+    call fat12_write_file_entry
+    popa
+    ret
+
+; ax - starting cluster
+fat12_delete_cluster_chain:
+    xor dx, dx
+    call fat12_read_fat
+.loop:
+    push ax
+    call fat12_get_cluster
+    mov [fat12_next_cluster], ax
+    pop ax
+    cmp [fat12_next_cluster], 0xff8
+    jae .done
+    call fat12_set_cluster
+    mov ax, [fat12_next_cluster]
+    jmp .loop
+.done:
+    call fat12_write_fat
+    ret
+
+; ds:si - filename
+fat12_delete_file:
+    pusha
+    push ds
+    push es
+    mov ax, cs
+    mov es, ax
+    lea di, [fat12_delete_file_filename_buffer]
+    mov cx, 12
+    rep movsb
+    mov ax, cs
+    mov ds, ax
+    lea si, [fat12_delete_file_filename_buffer]
+    call fat12_file_exists
+    test al, al
+    jz .done
+    mov byte [fat12_buffer + si], 0
+    call get_lba_and_size_of_root_dir
+    lea bx, [fat12_buffer]
+    call disk_write
+    mov ax, word [fat12_buffer + si + 26]
+    call fat12_delete_cluster_chain
+.done:
     pop es
     pop ds
     popa
@@ -765,6 +1212,69 @@ disk_read:
     pop ax
     ret
 
+disk_write_interrupt_wrapper:
+    call disk_write
+    iret
+
+; Writes sectors to a disk
+; Parameters:
+;   - ax: LBA address
+;   - cl: number of sectors to read (up to 128)
+;   - dl: drive number
+;   - es:bx: memory address of data to store
+disk_write:
+
+    ; save registers we will modify
+    push ax
+    push bx
+    push cx
+    push dx
+    push di
+
+    ; temporarily save CL (number of sectors to read)
+    push cx
+    ; compute CHS
+    call lba_to_chs
+    ; AL = number of sectors to read
+    pop ax
+
+    mov ah, 0x03
+    ; retry count
+    mov di, 3
+
+.retry:
+    ; save all registers, we don't know what bios modifies
+    pusha
+    ; set carry flag, some BIOS'es don't set it
+    stc
+    ; carry flag cleared = success
+    int 0x13
+    ; jump if carry not set
+    jnc .done
+
+    ; read failed
+    popa ; macro
+    call disk_reset
+
+    dec di
+    test di, di
+    jnz .retry
+
+.fail:
+    ; all attempts are exhausted
+    jmp floppy_error
+
+.done:
+    popa
+
+    pop di
+    pop dx
+    pop cx
+    pop bx
+    ; restore registers modified
+    pop ax
+    ret
+
 ; Resets disk controller
 ; Parameters:
 ;   - dl: drive number
@@ -793,6 +1303,7 @@ error:
     cmp al, 1
     jne .return
 
+    mov bp, 0x6969
     cli
     hlt
 .return:
@@ -838,16 +1349,19 @@ int21:
     call word [cs:call_value]
     iret
 .call_table:
-    dw puts, fat12_read_file_new, run_program_new, load_fat12_info, get_lba_and_size_of_root_dir, stub, fat12_file_exists, reset_vga, deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id
+    dw puts, fat12_read_file, run_program, load_fat12_info, get_lba_and_size_of_root_dir, stub, fat12_file_exists, reset_vga, \
+        deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id, fat12_write_file, fat12_delete_file, \
+        putn, putb, putw, put_hex, \
+        get_block_id_from_segment
     dw (256-($-.call_table))/2 dup(stub)
 
-msg_kernel_startup db "Stannum kernel 0.01", 0x0d, 0x0a
-                    file 'inc/info.txt'
+msg_kernel_startup file 'inc/info.txt'
                     db 0
 msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0d, 0x0a, 0
 msg_patching db "Patching the IVT", 0x0d, 0x0a, 0
 msg_loading_serial db "Loading serial I/O driver", 0x0d, 0x0a, 0
 msg_loading_pcspk db "Loading PC speaker driver", 0x0d, 0x0a, 0
+msg_loading_dirt db "joe dirt", 0x0d, 0x0a, 0
 msg_putm_guide db "each character represents the state of a 2KiB block of memory", 0x0d, 0x0a, "Legend:", 0x0d, 0x0a, ". = free", 0x0d, 0x0a, "^ = taken", 0x0d, 0x0a, "$ = end of chunk", 0x0d, 0x0a, "* = resident", 0x0d, 0x0a, 0x0a, 0
 
 msg_err_floppy db "Disk error", 0x0d, 0x0a, 0
@@ -883,14 +1397,34 @@ smallest_mem_block dw ?
 smallest_mem_block_size db ?
 desired_size db ?
 
+fat12_filename db 12 dup(?)
+fat12_buffer db 8192 dup(?)
+
 fat12_read_file_segtemp dw ?
 fat12_read_file_offtemp dw ?
-fat12_read_file_filename db 12 dup(?)
 fat12_read_file_extension_buffer db 3 dup(?)
 fat12_read_file_got_zero db ?
 fat12_read_file_file_cluster dw ?
 fat12_read_file_block dw ?
-fat12_read_file_buffer db 8192 dup(?)
+
+fat12_read_file_size_filesize dd ?
+
+fat12_first_free_entry_entries dw ?
+
+fat12_write_file_first_free_entry dw ?
+fat12_write_file_base_cluster dw ?
+fat12_write_file_last_cluster dw ?
+fat12_write_file_file_size dd ?
+fat12_write_file_segment dw ?
+fat12_write_file_offset dw ?
+
+fat12_file_entry_offset dw ?
+
+fat12_cluster_to_use dw ?
+fat12_new_cluster_value dw ?
+fat12_next_cluster dw ?
+
+fat12_delete_file_filename_buffer db 12 dup(?)
 
 run_program_argument_buffer db 128 dup(?)
 

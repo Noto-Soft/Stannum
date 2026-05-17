@@ -12,7 +12,7 @@ main:
 prompt:
     xor ax, ax
     lea di, [typing_buffer]
-    mov cx, 128
+    mov cx, 64
     rep stosw
 
     xor ah, ah
@@ -81,6 +81,12 @@ parse:
     je clear
 
     lea si, [typing_buffer]
+    lea di, [cmd_string_del]
+    mov cx, 4
+    repe cmpsb
+    je del
+
+    lea si, [typing_buffer]
     lea di, [cmd_string_dir]
     mov cx, 4
     repe cmpsb
@@ -129,7 +135,9 @@ parse:
 .stop_copy_if_found_space:
     mov ah, 0x06
     lea si, [filename_shenanigans]
+    push si
     int 0x21
+    pop si
     test al, al
     jnz .look_for_first_space_else_zero
     ; autocomplete .com extension
@@ -140,7 +148,9 @@ parse:
 
     mov ah, 0x06
     lea si, [filename_shenanigans]
+    push si
     int 0x21
+    pop si
     test al, al
     jz error_not_file
 .look_for_first_space_else_zero:
@@ -162,7 +172,9 @@ parse:
     lea si, [filename_shenanigans]
     ; bx already populated
     mov ah, 0x06
+    push si
     int 0x21
+    pop si
     test al, al
     jz error_not_file
     mov ah, 0x02 ; run program
@@ -236,6 +248,13 @@ dir:
 
     jmp prompt
 
+del:
+    mov ah, 0x0d
+    lea si, [typing_buffer + 4]
+    int 0x21
+
+    jmp prompt
+
 exit:
     retf
 
@@ -250,6 +269,7 @@ msg_err_not_file db "Not a valid command or executable. Run 'help' command", 0x0
 prompt_string db ">", 0
 
 cmd_string_clear db "clear "
+cmd_string_del db "del "
 cmd_string_dir db "dir "
 cmd_string_exit db "exit "
 cmd_string_help db "help "
@@ -257,7 +277,7 @@ cmd_string_mem db "mem "
 cmd_string_reboot db "reboot "
 cmd_string_shutdown db "shutdown "
 
-typing_buffer db 256 dup(0)
+typing_buffer db 128 dup(0)
 filename_shenanigans db 12 dup(0)
 
 entries dw 0
