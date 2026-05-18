@@ -5,7 +5,7 @@
 Кллллллл  ллллл  ллллл        лл  лл    лл  лл    лл  лллл  лл  л  л  лК
 Клл      лллллл  ллллл  лллл  лл  ллл   лл  ллл   ллл      ллл  лллл  лК
 К                                                                      К
-КStannum kernel 1.0                                                    К
+КStannum kernel 1.01                                                   К
 К                                                                      К
 КFeatures:                                                             К
 К* FAT12 file reading, writing, deleting                               К
