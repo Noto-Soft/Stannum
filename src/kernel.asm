@@ -39,17 +39,24 @@ main:
 
     call load_fat12_info
 
+    lea si, [msg_loading_a20]
+    call puts
+
+    lea si, [file_high_drv]
+    xor bx, bx
+    call run_program
+
     lea si, [msg_loading_serial]
     call puts
 
-    lea si, [file_serial_drv]
+    lea si, [file_serial_dev]
     xor bx, bx
     call run_program
 
     lea si, [msg_loading_pcspk]
     call puts
 
-    lea si, [file_pcspk_drv]
+    lea si, [file_pcspk_dev]
     xor bx, bx
     call run_program
 
@@ -1359,8 +1366,9 @@ msg_kernel_startup file 'inc/info.txt'
                     db 0
 msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0d, 0x0a, 0
 msg_patching db "Patching the IVT", 0x0d, 0x0a, 0
-msg_loading_serial db "Loading serial I/O driver", 0x0d, 0x0a, 0
-msg_loading_pcspk db "Loading PC speaker driver", 0x0d, 0x0a, 0
+msg_loading_a20 db "Enabling high memory [HIGH.DRV]", 0x0d, 0x0a, 0
+msg_loading_serial db "Loading serial I/O driver [SERIAL.DEV]", 0x0d, 0x0a, 0
+msg_loading_pcspk db "Loading PC speaker driver [PCSPK.DEV]", 0x0d, 0x0a, 0
 msg_loading_dirt db "joe dirt", 0x0d, 0x0a, 0
 msg_putm_guide db "each character represents the state of a 2KiB block of memory", 0x0d, 0x0a, "Legend:", 0x0d, 0x0a, ". = free", 0x0d, 0x0a, "^ = taken", 0x0d, 0x0a, "$ = end of chunk", 0x0d, 0x0a, "* = resident", 0x0d, 0x0a, 0x0a, 0
 
@@ -1368,9 +1376,10 @@ msg_err_floppy db "Disk error", 0x0d, 0x0a, 0
 msg_err_missing db "File not found", 0x0d, 0x0a, 0
 msg_err_oom db "Kernel panicing: out of memory", 0x0d, 0x0a, 0
 
-file_serial_drv db "serial.drv", 0
-file_pcspk_drv db "pcspk.drv", 0
-file_scli_com db "SCLi.com", 0
+file_high_drv db "high.drv", 0
+file_serial_dev db "serial.dev", 0
+file_pcspk_dev db "pcspk.dev", 0
+file_scli_com db "scli.com", 0
 
 newline db 0x0d, 0x0a, 0
 
@@ -1380,6 +1389,8 @@ db "i was here 5.12.2026"
 reupload db 0
 
 deadly_errors db 1
+
+a20_enabled db ?
 
 int_stack dw ?
 int_ds dw ?

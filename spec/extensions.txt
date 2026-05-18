@@ -1,0 +1,6 @@
+BIN  (only for kernel) flat binary, loaded directly into a set memory address
+COM  flat binary, userspace executable, position independent
+DEV  specifically device driver
+DRV  any hardware or software driver
+TUN  tune for the pc speaker
+TXT  text file
