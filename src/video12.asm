@@ -3,8 +3,6 @@ use16
 main:
     mov ax, cs
     mov ds, ax
-    mov ax, 0xa000
-    mov es, ax
 
     xor ax, ax
     int 0x30

@@ -16,7 +16,8 @@ fasm src/repeat.asm build/repeat.com
 fasm src/tell.asm build/tell.com
 fasm src/write.asm build/write.com
 fasm src/beeper.asm build/beeper.com
-fasm src/video.asm build/video.com
+fasm src/video12.asm build/video12.com
+fasm src/video13.asm build/video13.com
 
 fasm src/tunes/mouth.asm build/mouth.tun
 fasm src/tunes/scale.asm build/scale.tun
@@ -43,7 +44,8 @@ mcopy -i os.img build/repeat.com "::repeat.com"
 mcopy -i os.img build/tell.com "::tell.com"
 mcopy -i os.img build/write.com "::write.com"
 mcopy -i os.img build/beeper.com "::beeper.com"
-mcopy -i os.img build/video.com "::video.com"
+mcopy -i os.img build/video12.com "::video12.com"
+mcopy -i os.img build/video13.com "::video13.com"
 
 mcopy -i os.img src/reminder.txt "::reminder.txt"
 mcopy -i os.img src/woohey.txt "::woohey.txt"

@@ -50,12 +50,49 @@ write_pixel_12h:
 
     mov ax, 0x205 ; read mode 0, write mode 2
     out dx, ax
+    
+    push es
+    mov cx, 0xa000
+    mov es, cx
 
     mov al, [es:bx] ; load to latch register
     pop ax
     mov [es:bx], al ; write to register
 
+    pop es
+
     pop cx
+    pop dx
+    pop bx
+    retf
+
+; al - color
+; cx - column
+; dx - row
+write_pixel_13h:
+    push bx
+    push dx
+    push es
+
+    mov bx, 0xa000
+    mov es, bx
+
+    push ax
+
+    mov ax, dx
+    xor dx, dx
+    mov bx, 320
+    mul bx
+
+    mov bx, ax
+
+    pop ax
+
+    add bx, cx
+
+    mov [es:bx], al
+
+    pop es
     pop dx
     pop bx
     retf
@@ -63,6 +100,11 @@ write_pixel_12h:
 get_write_pixel_12h_ptr:
     mov bx, cs
     mov ax, word write_pixel_12h
+    ret
+
+get_write_pixel_13h_ptr:
+    mov bx, cs
+    mov ax, word write_pixel_13h
     ret
 
 stub:
@@ -84,7 +126,7 @@ wrapint30h:
     call word [cs:call_value]
     iret
 .call_table:
-    dw get_write_pixel_12h_ptr
+    dw get_write_pixel_12h_ptr, get_write_pixel_13h_ptr
     dw (256-($-.call_table))/2 dup(stub)
 
 offset_original dw 0
