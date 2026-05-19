@@ -62,6 +62,7 @@ prompt:
     mov al, 0x0a
     mov byte [typing_buffer + di], al
     int 0x10
+    inc di
     jmp .typing
 
 write:

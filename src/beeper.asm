@@ -75,7 +75,7 @@ wait_note:
     pusha
     mov ah, 0x86
     mov cx, 0x2
-    mov dx, 0x8b0a
+    mov dx, 0x7000
     int 0x15
     popa
     ret

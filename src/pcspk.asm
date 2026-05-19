@@ -6,6 +6,8 @@ use16
 include 'inc/wrap.inc'
 
 main:
+    call speaker_off
+
     wrap 0x32, wrapint32h
 
     mov ah, 0x09

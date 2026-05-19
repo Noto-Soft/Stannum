@@ -13,7 +13,7 @@ main:
     mov ss, ax
     lea sp, [stack_top]
 
-    call reset_vga
+    call reset_vga_text_mode
 
     lea si, [msg_kernel_startup]
     call puts
@@ -57,6 +57,13 @@ main:
     call puts
 
     lea si, [file_pcspk_dev]
+    xor bx, bx
+    call run_program
+
+    lea si, [msg_loading_vga]
+    call puts
+
+    lea si, [file_vga_dev]
     xor bx, bx
     call run_program
 
@@ -248,7 +255,7 @@ puts:
     pop ax
     ret
 
-reset_vga:
+reset_vga_text_mode:
     pusha
     mov ax, 0x0003
     int 0x10
@@ -1356,7 +1363,7 @@ int21:
     call word [cs:call_value]
     iret
 .call_table:
-    dw puts, fat12_read_file, run_program, load_fat12_info, get_lba_and_size_of_root_dir, stub, fat12_file_exists, reset_vga, \
+    dw puts, fat12_read_file, run_program, load_fat12_info, get_lba_and_size_of_root_dir, stub, fat12_file_exists, reset_vga_text_mode, \
         deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id, fat12_write_file, fat12_delete_file, \
         putn, putb, putw, put_hex, \
         get_block_id_from_segment
@@ -1369,6 +1376,7 @@ msg_patching db "Patching the IVT", 0x0d, 0x0a, 0
 msg_loading_a20 db "Enabling high memory [HIGH.DRV]", 0x0d, 0x0a, 0
 msg_loading_serial db "Loading serial I/O driver [SERIAL.DEV]", 0x0d, 0x0a, 0
 msg_loading_pcspk db "Loading PC speaker driver [PCSPK.DEV]", 0x0d, 0x0a, 0
+msg_loading_vga db "Loading VGA graphics driver [VGA.DEV]", 0x0d, 0x0a, 0
 msg_loading_dirt db "joe dirt", 0x0d, 0x0a, 0
 msg_putm_guide db "each character represents the state of a 2KiB block of memory", 0x0d, 0x0a, "Legend:", 0x0d, 0x0a, ". = free", 0x0d, 0x0a, "^ = taken", 0x0d, 0x0a, "$ = end of chunk", 0x0d, 0x0a, "* = resident", 0x0d, 0x0a, 0x0a, 0
 
@@ -1379,6 +1387,7 @@ msg_err_oom db "Kernel panicing: out of memory", 0x0d, 0x0a, 0
 file_high_drv db "high.drv", 0
 file_serial_dev db "serial.dev", 0
 file_pcspk_dev db "pcspk.dev", 0
+file_vga_dev db "vga.dev", 0
 file_scli_com db "scli.com", 0
 
 newline db 0x0d, 0x0a, 0
