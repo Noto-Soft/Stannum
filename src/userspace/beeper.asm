@@ -21,12 +21,24 @@ main:
     int 0x21
     mov [block], bx
     
+    xor ah, ah
+    lea si, [msg_ctrl_q_to_break]
+    int 0x21
+
     mov ah, 0x0b
     int 0x21
     mov ds, bx
 
     xor si, si
 .loop:
+    mov ah, 0x01
+    int 0x16
+    jz .no_stroke
+    xor ah, ah
+    int 0x16 ; take it off the buffer
+    cmp al, ("q" and 0x1f) ; ctrl+q
+    je .done
+.no_stroke:
     mov bx, [si]
     add si, 2
     test bx, bx
@@ -66,11 +78,6 @@ error:
 
     retf
 
-msg_err_supply_filename db "Must supply filename!", 0x0d, 0x0a, 0
-
-argument db 12 dup(0)
-block dw 0
-
 wait_note:
     pusha
     mov ah, 0x86
@@ -79,3 +86,9 @@ wait_note:
     int 0x15
     popa
     ret
+
+msg_ctrl_q_to_break db "Break = CTRL+Q", 0x0a, 0
+msg_err_supply_filename db "Must supply filename!", 0x0a, 0
+
+argument db 12 dup(0)
+block dw 0

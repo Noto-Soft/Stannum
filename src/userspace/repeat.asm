@@ -31,5 +31,5 @@ main:
 
     retf
 
-newline db 0x0d, 0x0a, 0
+newline db 0x0a, 0
 argument db 128 dup(0)

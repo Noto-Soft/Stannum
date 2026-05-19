@@ -22,7 +22,6 @@ prompt:
     mov cx, 64
     rep stosw
 
-    xor bh, bh
     xor di, di
 .typing:
     xor ax, ax
@@ -36,32 +35,29 @@ prompt:
     cmp di, 128
     jae .typing
     mov [typing_buffer + di], al
-    mov ah, 0x0e
-    int 0x10
+    mov ah, 0x05
+    int 0x21
     inc di
     jmp .typing
 .backspace:
-    mov ah, 0x0e
+    mov ah, 0x05
     cmp di, 0
     jna .typing
     dec di
     mov byte [typing_buffer + di], " "
-    int 0x10
+    int 0x21
     mov al, " "
-    int 0x10
+    int 0x21
     mov al, 0x08
-    int 0x10
+    int 0x21
     jmp .typing
 .newline:
-    mov ah, 0x0e
-    cmp di, 126
+    mov ah, 0x05
+    cmp di, 127
     jnbe .typing
-    mov byte [typing_buffer + di], 0x0d
-    int 0x10
-    inc di
     mov al, 0x0a
     mov byte [typing_buffer + di], al
-    int 0x10
+    int 0x21
     inc di
     jmp .typing
 
@@ -84,7 +80,7 @@ error:
 
     retf
 
-msg_err_supply_filename db "Must supply filename!", 0x0d, 0x0a, 0
+msg_err_supply_filename db "Must supply filename!", 0x0a, 0
 filename db 12 dup(0)
 align 2048
 typing_buffer db 128 dup(" ")

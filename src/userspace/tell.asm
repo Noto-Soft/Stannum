@@ -45,7 +45,7 @@ error:
 
     retf
 
-msg_err_supply_filename db "Must supply filename!", 0x0d, 0x0a, 0
+msg_err_supply_filename db "Must supply filename!", 0x0a, 0
 
 argument db 12 dup(0)
 block dw 0

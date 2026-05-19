@@ -2,25 +2,27 @@
 rm -f os.img
 mkdir -p build
 
-fasm src/boot.asm build/boot.bin
-fasm src/kernel.asm build/kernel.bin
+fasm src/boot/boot.asm build/boot.bin
 
-fasm src/high.asm build/high.drv
-fasm src/serial.asm build/serial.dev
-fasm src/pcspk.asm build/pcspk.dev
-fasm src/vga.asm build/vga.dev
+fasm src/kernel/kernel.asm build/kernel.bin
 
-fasm src/scli.asm build/scli.com
-fasm src/hello.asm build/hello.com
-fasm src/repeat.asm build/repeat.com
-fasm src/tell.asm build/tell.com
-fasm src/write.asm build/write.com
-fasm src/beeper.asm build/beeper.com
-fasm src/video12.asm build/video12.com
-fasm src/video13.asm build/video13.com
+fasm src/drivers/high.asm build/high.drv
+fasm src/drivers/serial.asm build/serial.dev
+fasm src/drivers/pcspk.asm build/pcspk.dev
+fasm src/drivers/vga.asm build/vga.dev
+
+fasm src/userspace/scli.asm build/scli.com
+fasm src/userspace/hello.asm build/hello.com
+fasm src/userspace/repeat.asm build/repeat.com
+fasm src/userspace/tell.asm build/tell.com
+fasm src/userspace/write.asm build/write.com
+fasm src/userspace/beeper.asm build/beeper.com
+fasm src/userspace/video12.asm build/video12.com
+fasm src/userspace/video13.asm build/video13.com
 
 fasm src/tunes/mouth.asm build/mouth.tun
 fasm src/tunes/scale.asm build/scale.tun
+fasm src/tunes/pb95.asm build/pb95.tun
 
 # gcc -m16 -ffreestanding -nostdlib -fno-pie -fno-pic -Wl,--oformat=binary -s -o build/ctest.bin src/ctest.c
 
@@ -47,12 +49,14 @@ mcopy -i os.img build/beeper.com "::beeper.com"
 mcopy -i os.img build/video12.com "::video12.com"
 mcopy -i os.img build/video13.com "::video13.com"
 
-mcopy -i os.img src/reminder.txt "::reminder.txt"
-mcopy -i os.img src/woohey.txt "::woohey.txt"
+mcopy -i os.img src/userspace/docs/reminder.txt "::reminder.txt"
+mcopy -i os.img src/userspace/docs/woohey.txt "::woohey.txt"
 mcopy -i os.img spec/extensions.txt "::extens.txt"
+mcopy -i os.img LICENSE "::license.txt"
 
 mcopy -i os.img build/mouth.tun "::mouth.tun"
 mcopy -i os.img build/scale.tun "::scale.tun"
+mcopy -i os.img build/pb95.tun "::pb95.tun"
 
 if [[ "$1" == "test" ]]; then
     qemu-system-x86_64 -name Stannum --drive file=os.img,if=floppy,format=raw -machine pcspk-audiodev=spk -audiodev pa,id=spk -vga std

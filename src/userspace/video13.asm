@@ -51,7 +51,7 @@ exit_early_no_vga_driver:
 
     retf
 
-msg_err_no_vga_driver db "No int 30h VGA driver detected!", 0x0d, 0x0a, 0
+msg_err_no_vga_driver db "No int 30h VGA driver detected!", 0x0a, 0
 
 label write_pixel_13h
 write_pixel_13h_off dw 0

@@ -4,16 +4,5 @@
 บฒฒ      ฒฒฒฒฒฒ  ฒฒฒฒฒ  ฒฒฒฒ  ฒฒ  ฒ  ฒ  ฒฒ  ฒ  ฒ  ฒฒ  ฒฒฒฒ  ฒฒ        ฒบ
 บÛÛÛÛÛÛÛ  ÛÛÛÛÛ  ÛÛÛÛÛ        ÛÛ  ÛÛ    ÛÛ  ÛÛ    ÛÛ  ÛÛÛÛ  ÛÛ  Û  Û  Ûบ
 บÛÛ      ÛÛÛÛÛÛ  ÛÛÛÛÛ  ÛÛÛÛ  ÛÛ  ÛÛÛ   ÛÛ  ÛÛÛ   ÛÛÛ      ÛÛÛ  ÛÛÛÛ  Ûบ
-บ                                                                      บ
-บStannum kernel 1.03                                                   บ
-บ                                                                      บ
-บFeatures:                                                             บ
-บ* FAT12 file reading, writing, deleting                               บ
-บ* Simple command line                                                 บ
-บ* Proper block allocation for programs and files                      บ
-บ   * Terminate and stay resident                                      บ
-บ* Serial driver                                                       บ
-บ* PC speaker driver                                                   บ
-บ* Basic write-only text editor                                        บ
 ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
 

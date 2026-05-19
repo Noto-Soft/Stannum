@@ -7,7 +7,7 @@
 
 use16
 
-include 'inc/wrap.inc'
+include '../inc/wrap.inc'
 
 main:
     wrap 0x30, wrapint30h
