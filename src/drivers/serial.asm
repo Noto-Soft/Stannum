@@ -6,6 +6,9 @@ use16
 include '../inc/wrap.inc'
 
 main:
+    mov ax, cs
+    mov ds, ax
+
     mov dx, 0x3fb
     mov al, 0x80
     out dx, al
@@ -28,6 +31,14 @@ main:
     mov dx, 0x3fc
     mov al, 0x0b
     out dx, al
+
+    mov ah, 0x0e
+    mov bl, 0x0a
+    int 0x21
+
+    xor ah, ah
+    lea si, [msg_initialized]
+    int 0x21
 
     wrap 0x36, wrapint36h
 
@@ -86,6 +97,8 @@ wrapint36h:
 .call_table:
     dw write_serial, read_serial
     dw (256-($-.call_table))/2 dup(stub)
+
+msg_initialized db "    * Port COM1 initialized", 0x0a, 0
 
 offset_original dw 0
 segment_original dw 0

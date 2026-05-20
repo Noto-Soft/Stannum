@@ -1,0 +1,339 @@
+Stannum Interrupt List
+
+int 21/AH=00h - STANNUM - PRINT STRING
+int 21/AH=01h - STANNUM - READ FILE (FAT12)
+int 21/AH=02h - STANNUM - RUN PROGRAM (FAT12)
+int 21/AH=03h - STANNUM - SELECT DISK DRIVE
+int 21/AH=04h - STANNUM - GET LBA, SIZE, ENTRIES OF ROOT DIR
+int 21/AH=05h - STANNUM - PRINT CHARACTER
+int 21/AH=06h - STANNUM - FILE EXISTS (FAT12)
+int 21/AH=07h - STANNUM - RESET VGA TEXT MODE
+int 21/AH=08h - STANNUM - DEALLOCATE FILE
+int 21/AH=09h - STANNUM - STAY RESIDENT
+int 21/AH=0Ah - STANNUM - PRINT MEMORY STATUS (DEBUG)
+int 21/AH=0Bh - STANNUM - GET SEGMENT FROM BLOCK ID
+int 21/AH=0Ch - STANNUM - WRITE FILE (FAT12)
+int 21/AH=0Dh - STANNUM - DELETE FILE (FAT12)
+int 21/AH=0Eh - STANNUM - SET TEXT ATTRIBUTE
+int 21/AH=10h - STANNUM - PRINT HEX BYTE
+int 21/AH=11h - STANNUM - PRINT HEX WORD
+int 21/AH=12h - STANNUM - PRINT FORMATTED HEX BYTE/WORD
+int 21/AH=13h - STANNUM - GET BLOCK ID FROM SEGMENT
+int 22 - STANNUM - DISK READ (RAW)
+int 23 - STANNUM - DISK WRITE (RAW)
+int 30/AH=00h - VGA.DEV - GET POINTER TO WRITE PIXEL FUNCTION (MODE 12h)
+int 30/AH=01h - VGA.DEV - GET POINTER TO WRITE PIXEL FUNCTION (MODE 13h)
+int 30/AH=02h - VGA.DEV - SET 8/9 CHARACTER WIDTH (MODE 03h)
+int 32/AH=00h - PCSPK.DEV - SET PC SPEAKER FREQUENCY
+int 32/AH=01h - PCSPK.DEV - ENABLE PC SPEAKER
+int 32/AH=02h - PCSPK.DEV - DISABLE PC SPEAKER
+int 36/AH=00h - SERIAL.DEV - WRITE CHARACTER TO COM1
+int 36/AH=01h - SERIAL.DEV - READ CHARACTER FROM COM1
+int A2 - HIGH.DRV - CHECK IF A20 LINE WAS ENABLED
+
+
+
+STANNUM - PRINT STRING
+
+AH = 00h
+DS:SI = start of string (null terminated)
+
+Return:
+Nothing
+
+
+
+STANNUM - READ FILE (FAT12)
+
+AH = 01h
+DS:SI = filename
+
+Return:
+BX = starting block of file in memory
+
+
+
+STANNUM - RUN PROGRAM (FAT12)
+
+AH = 02h
+DS:BX = program arguments
+DS:SI = filename
+
+Return:
+Nothing
+
+
+
+STANNUM - SELECT DISK DRIVE
+
+AH = 03h
+DL = drive to load bpb/ebr of
+
+Return:
+Nothing
+
+
+
+STANNUM - GET LBA, SIZE, ENTRIES OF ROOT DIR
+
+AH = 04h
+
+Return:
+AX = starting lba of root directory on disk
+BX = amount of root directory entries
+CL = size of root directory on disk in sectors
+
+
+
+STANNUM - PRINT CHARACTER
+
+AH = 05h
+AL = character
+
+Return:
+Nothing
+
+
+
+STANNUM - FILE EXISTS (FAT12)
+
+AH = 06h
+DS:SI = filename
+
+Return:
+AL = file exists (0 or 1)
+SI = file entry offset (used internally, can ignore this)
+
+
+
+STANNUM - RESET VGA TEXT MODE
+
+AH = 07h
+
+Return:
+Nothing
+
+
+
+STANNUM - DEALLOCATE FILE
+
+AH = 08h
+BX = starting block of file in memory
+
+Return:
+Nothing
+
+
+
+STANNUM - STAY RESIDENT
+
+AH = 09h
+CS = segment of program to stay resident
+
+Return:
+Nothing
+
+
+
+STANNUM - PRINT MEMORY STATUS (DEBUG)
+
+AH = 0Ah
+
+NOTE: for debug only, might be removed in future
+
+Return:
+Nothing
+
+
+
+STANNUM - GET SEGMENT FROM BLOCK ID
+
+AH = 0Bh
+BX = block id
+
+Return:
+BX = segment
+
+
+
+STANNUM - WRITE FILE (FAT12)
+
+AH = 0Ch
+BX = starting block of file in memory
+ECX = size of file in bytes
+DS:SI = filename
+
+NOTE: will delete original file if exists
+
+Return:
+Nothing
+
+
+
+STANNUM - DELETE FILE (FAT12)
+
+AH = 0Dh
+DS:SI = filename
+
+Return:
+Nothing
+
+
+
+STANNUM - SET TEXT ATTRIBUTE
+
+AH = 0Eh
+BL = attribute byte
+
+Return:
+Nothing
+
+
+
+STANNUM - PRINT HEX BYTE
+
+AH = 10h
+CL = hex byte
+
+Return:
+Nothing
+
+
+
+STANNUM - PRINT HEX WORD
+
+AH = 11h
+CX = hex word
+
+Return:
+Nothing
+
+
+
+STANNUM - PRINT FORMATTED HEX BYTE/WORD
+
+AH = 12h
+CX = hex byte/word
+
+NOTE: if CH is 0 then only a byte (CL) will be printed
+
+Return:
+Nothing
+
+
+
+STANNUM - GET BLOCK ID FROM SEGMENT
+
+AH = 13h
+BX = segment
+
+Return:
+BX = block id
+
+
+
+STANNUM - DISK READ (RAW)
+
+AX = LBA of first sector
+ES:BX = buffer
+CL = number of sectors
+DL = drive
+
+Return:
+Nothing
+
+
+
+STANNUM - DISK WRITE (RAW)
+
+AX = LBA of first sector
+ES:BX = buffer
+CL = number of sectors
+DL = drive
+
+Return:
+Nothing
+
+
+
+VGA.DEV - GET POINTER TO WRITE PIXEL FUNCTION (MODE 12h)
+
+AH = 00h
+
+Return:
+BX = segment of write pixel function
+AX = offset of write pixel function
+
+
+
+VGA.DEV - GET POINTER TO WRITE PIXEL FUNCTION (MODE 13h)
+
+AH = 01h
+
+Return:
+BX = segment of write pixel function
+AX = offset of write pixel function
+
+
+
+VGA.DEV - SET 8/9 CHARACTER WIDTH (MODE 03h)
+
+AH = 02h
+CL = disable 9 dots mode (0 for no, 1 for yes)
+
+Return:
+Nothing
+
+PCSPK.DEV - SET PC SPEAKER FREQUENCY
+
+AH = 00h
+BX = frequency
+
+Return:
+Nothing
+
+
+
+PCSPK.DEV - ENABLE PC SPEAKER
+
+AH = 01h
+
+Return:
+Nothing
+
+
+
+PCSPK.DEV - DISABLE PC SPEAKER
+
+AH = 02h
+
+Return:
+Nothing
+
+
+
+SERIAL.DEV - WRITE CHARACTER TO COM1
+
+AH = 00h
+AL = character
+
+Return:
+Nothing
+
+
+
+SERIAL.DEV - READ CHARACTER FROM COM1
+
+AH = 01h
+
+Return:
+AL = character
+
+
+
+HIGH.DRV - CHECK IF A20 LINE WAS ENABLED
+
+Nothing
+
+Return:
+AL = enabled? (0 for no, 1 for yes)

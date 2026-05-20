@@ -18,7 +18,7 @@ main:
     mov [text_attribute], 0x0e
     lea si, [msg_logo]
     call puts
-    mov [text_attribute], 0x0f
+    mov [text_attribute], 0x07
     lea si, [msg_credit]
     call puts
 
@@ -47,29 +47,35 @@ main:
     call puts
 
     lea si, [file_high_drv]
-    xor bx, bx
     call run_program
+
+    mov [text_attribute], 0x07
 
     lea si, [msg_loading_serial]
     call puts
 
     lea si, [file_serial_dev]
-    xor bx, bx
     call run_program
+
+    mov [text_attribute], 0x07
 
     lea si, [msg_loading_pcspk]
     call puts
 
     lea si, [file_pcspk_dev]
-    xor bx, bx
     call run_program
+
+    mov [text_attribute], 0x07
 
     lea si, [msg_loading_vga]
     call puts
 
     lea si, [file_vga_dev]
-    xor bx, bx
     call run_program
+
+    mov ah, 0x02
+    mov cl, 1
+    int 0x30
 
     ; done printing startup messages
     ; put newline for spacing idk look good
@@ -299,6 +305,11 @@ puts:
     pop ax
     ret
 
+; bl - attribute
+set_text_attribute:
+    mov [cs:text_attribute], bl
+    ret
+
 reset_vga_text_mode:
     pusha
     mov ax, 0x0003
@@ -306,13 +317,9 @@ reset_vga_text_mode:
     mov ax, 0x1112
     xor bl, bl
     int 0x10
-    mov dx, 0x3c4
-    mov al, 0x01
-    out dx, al
-    inc dx
-    in al, dx
-    or al, 0x01
-    out dx, al
+    mov ah, 0x02
+    mov cl, 1
+    int 0x30
     popa
     ret
 
@@ -1398,7 +1405,7 @@ int21:
 .call_table:
     dw puts, fat12_read_file, run_program, load_fat12_info, get_lba_and_size_of_root_dir, putc, fat12_file_exists, reset_vga_text_mode, \
         deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id, fat12_write_file, fat12_delete_file, \
-        putn, putb, putw, put_hex, \
+        set_text_attribute, putb, putw, put_hex, \
         get_block_id_from_segment
     dw (256-($-.call_table))/2 dup(stub)
 
@@ -1433,7 +1440,7 @@ reupload db 0
 
 deadly_errors db 1
 
-text_attribute db 0x0f
+text_attribute db ?
 
 a20_enabled db ?
 

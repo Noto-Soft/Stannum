@@ -1,5 +1,7 @@
 ; vga.dev - driver for vga graphics
 ; uses int 0x30
+;
+; note about some functions:
 ; for speed purposes, (as these functions are gonna be called lots and lots in graphics programs)
 ;   the functions are not directly called by the interrupt. instead they will have interrupts
 ;   that pass the far pointers to the functions, to bypass the interrupt overhead from both
@@ -107,6 +109,24 @@ get_write_pixel_13h_ptr:
     mov ax, word write_pixel_13h
     ret
 
+; cl - character dot size (0 for 9, 1 for 8)
+set_character_size:
+    push ax
+    push dx
+    push cx
+    mov dx, 0x3c4
+    mov al, 0x01
+    out dx, al
+    inc dx
+    in al, dx
+    and cl, 0x01
+    or al, cl
+    out dx, al
+    pop cx
+    pop dx
+    pop ax
+    ret
+
 stub:
     ret
 
@@ -126,7 +146,7 @@ wrapint30h:
     call word [cs:call_value]
     iret
 .call_table:
-    dw get_write_pixel_12h_ptr, get_write_pixel_13h_ptr
+    dw get_write_pixel_12h_ptr, get_write_pixel_13h_ptr, set_character_size
     dw (256-($-.call_table))/2 dup(stub)
 
 offset_original dw 0

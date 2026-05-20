@@ -34,6 +34,10 @@ enable_a20_interrupt:
 
     ; keyboard controller method is very odd so im just gonna ignore the fact that it exists
 
+    mov ah, 0x0e
+    mov bl, 0x0c
+    int 0x21
+
     xor ah, ah
     lea si, [msg_err_not_enabled]
     int 0x21
@@ -82,6 +86,10 @@ enable_a20_keyboard:
     je exit
 
 exit_msg:
+    mov ah, 0x0e
+    mov bl, 0x0a
+    int 0x21
+
     xor ah, ah
     lea si, [msg_already_enabled]
     int 0x21
@@ -153,5 +161,5 @@ get_a20_state_int:
     call get_a20_state
     iret
 
-msg_already_enabled db "The A20 line is already enabled by the BIOS! :)", 0x0a, 0
-msg_err_not_enabled db "A20 line failed to enable", 0x0a, 0
+msg_already_enabled db "    * The A20 line is already enabled by the BIOS! :)", 0x0a, 0
+msg_err_not_enabled db "    * A20 line failed to enable", 0x0a, 0

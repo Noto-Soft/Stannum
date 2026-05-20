@@ -72,6 +72,10 @@ main:
     retf
 
 error:
+    mov ah, 0x0e
+    mov bl, 0x0c
+    int 0x21
+
     xor ah, ah
     lea si, [msg_err_supply_filename]
     int 0x21

@@ -23,6 +23,7 @@ fasm src/userspace/video13.asm build/video13.com
 fasm src/tunes/mouth.asm build/mouth.tun
 fasm src/tunes/scale.asm build/scale.tun
 fasm src/tunes/pb95.asm build/pb95.tun
+fasm src/tunes/852.asm build/852.tun
 
 # gcc -m16 -ffreestanding -nostdlib -fno-pie -fno-pic -Wl,--oformat=binary -s -o build/ctest.bin src/ctest.c
 
@@ -57,9 +58,10 @@ mcopy -i os.img LICENSE "::license.txt"
 mcopy -i os.img build/mouth.tun "::mouth.tun"
 mcopy -i os.img build/scale.tun "::scale.tun"
 mcopy -i os.img build/pb95.tun "::pb95.tun"
+mcopy -i os.img build/852.tun "::852.tun"
 
 if [[ "$1" == "test" ]]; then
-    qemu-system-x86_64 -name Stannum --drive file=os.img,if=floppy,format=raw -machine pcspk-audiodev=spk -audiodev pa,id=spk -vga std
+    qemu-system-x86_64 -name Stannum --drive file=os.img,if=floppy,format=raw -machine pcspk-audiodev=spk -audiodev pa,id=spk -vga std --enable-kvm
 else
     echo "[build.sh] Run \"bash build.sh test\" to build and then boot into qemu (qemu-system-x86 package required)"
 fi

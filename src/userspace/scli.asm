@@ -5,11 +5,19 @@ main:
     mov ds, ax
     mov es, ax
 
+    mov ah, 0x0e
+    mov bl, 0x0f
+    int 0x21
+
     xor ah, ah
     lea si, [msg_scli_startup]
     int 0x21
 
 prompt:
+    mov ah, 0x0e
+    mov bl, 0x0f
+    int 0x21
+
     xor ax, ax
     lea di, [typing_buffer]
     mov cx, 142/2
@@ -175,12 +183,21 @@ parse:
     pop si
     test al, al
     jz error_not_file
+    push bx
+    mov ah, 0x0e
+    mov bl, 0x07
+    int 0x21
+    pop bx
     mov ah, 0x02 ; run program
     int 0x21
 
     jmp prompt
 
 error_not_file:
+    mov ah, 0x0e
+    mov bl, 0x0c
+    int 0x21
+
     xor ah, ah
     lea si, [msg_err_not_file]
     int 0x21

@@ -6,8 +6,22 @@ use16
 include '../inc/wrap.inc'
 
 main:
+    call speaker_state
+    test al, 0x03
+    jz .skip_disable_speaker
     call speaker_off
 
+    mov ah, 0x0e
+    mov bl, 0x03
+    int 0x21
+
+    mov ax, cs
+    mov ds, ax
+
+    xor ah, ah
+    lea si, [msg_disabled_speaker]
+    int 0x21
+.skip_disable_speaker:
     wrap 0x32, wrapint32h
 
     mov ah, 0x09
@@ -65,6 +79,11 @@ speaker_off:
     pop ax
     ret
 
+speaker_state:
+    in al, PORT_SPEAKER
+    and al, 00000011b
+    ret
+
 stub:
     sub sp, 2
     jmp far dword [cs:offset_original]
@@ -87,6 +106,8 @@ wrapint32h:
 .call_table:
     dw set_freq, speaker_on, speaker_off
     dw (256-($-.call_table))/2 dup(stub)
+
+msg_disabled_speaker db "    * Turned off PC speaker", 0x0a, 0
 
 offset_original dw 0
 segment_original dw 0
