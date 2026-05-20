@@ -2,6 +2,8 @@
 บSCLi -- Stannum Command Lineบ
 บ                            บ
 บCommands:                   บ
+บ  * a:                      บ
+บ  * b:                      บ
 บ  * clear                   บ
 บ  * del                     บ
 บ  * dir                     บ
@@ -10,5 +12,6 @@
 บ  * mem                     บ
 บ  * reboot                  บ
 บ  * shutdown                บ
+บ  * type                    บ
 ศออออออออออออออออออออออออออออผ
 

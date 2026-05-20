@@ -1,3 +1,3 @@
-Notosoft Stannum kernel 1.05
+Notosoft Stannum kernel 2.00
 Copyright (c) 2026 Notosoft Solutions -- BSD-1-Clause
 

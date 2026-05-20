@@ -23,6 +23,14 @@ prompt:
     mov cx, 142/2
     rep stosw
 
+    mov ah, 0x14
+    int 0x21
+
+    mov ah, 0x05
+    mov al, dl
+    add al, "A"
+    int 0x21
+
     xor ah, ah
     lea si, [prompt_string]
     int 0x21
@@ -35,7 +43,7 @@ prompt:
     je parse
     cmp al, 0x08
     je .backspace
-    cmp di, 78
+    cmp di, 142
     jae .typing
     mov [typing_buffer + di], al
     mov ah, 0x05
@@ -121,6 +129,24 @@ parse:
     mov cx, 4
     repe cmpsb
     je mem
+
+    lea si, [typing_buffer]
+    lea di, [cmd_string_type]
+    mov cx, 5
+    repe cmpsb
+    je type
+
+    lea si, [typing_buffer]
+    lea di, [cmd_string_a]
+    mov cx, 3
+    repe cmpsb
+    je drive_a
+
+    lea si, [typing_buffer]
+    lea di, [cmd_string_b]
+    mov cx, 3
+    repe cmpsb
+    je drive_b
 
     mov al, " "
     lea di, [filename_shenanigans]
@@ -238,6 +264,11 @@ shutdown:
     hlt
 
 dir:
+    xor ax, ax
+    lea di, [buffer]
+    mov cx, 8192/2
+    rep stosw
+
     mov ah, 0x4
     int 0x21
     mov [entries], bx
@@ -270,19 +301,78 @@ del:
 
     jmp prompt
 
+type:
+    mov ah, 0x0e
+    mov bl, 0x07
+    int 0x21
+
+    lea si, [typing_buffer + 5]
+
+    cmp byte [si], " "
+    je error_supply_filename
+
+    mov ah, 0x01
+    int 0x21
+    mov [block], bx
+    
+    mov ah, 0x0b
+    int 0x21
+    mov ds, bx
+
+    xor ah, ah
+    xor si, si
+    int 0x21
+
+    mov ax, cs
+    mov ds, ax
+
+    mov ah, 0x08
+    mov bx, [block]
+    int 0x21
+
+    jmp prompt
+
+error_supply_filename:
+    mov ah, 0x0e
+    mov bl, 0x0c
+    int 0x21
+
+    xor ah, ah
+    lea si, [msg_err_supply_filename]
+    int 0x21
+
+    jmp prompt
+
+drive_a:
+    mov ah, 0x03
+    xor dl, dl
+    int 0x21
+
+    jmp dir
+
+drive_b:
+    mov ah, 0x03
+    mov dl, 0x01
+    int 0x21
+
+    jmp dir
+
 exit:
     retf
 
-msg_scli_startup db "SCLi -- Stannum Command Line", 0x0a, 0x0d, 0
-msg_safe db "It is now safe to turn off your computer.", 0
+msg_scli_startup db "SCLi -- Stannum Command Line", 0x0a, 0
+msg_safe db "It is now safe to turn off your computer.", 0x0a, 0
 
 msg_help file '../inc/help.txt'
     db 0
 
-msg_err_not_file db "Not a valid command or executable. Run 'help' command", 0x0a, 0x0d, 0
+msg_err_not_file db "Not a valid command or executable. Run 'help' command", 0x0a, 0
+msg_err_supply_filename db "Must supply filename!", 0x0a, 0
 
 prompt_string db ">", 0
 
+cmd_string_a db "a: "
+cmd_string_b db "b: "
 cmd_string_clear db "clear "
 cmd_string_del db "del "
 cmd_string_dir db "dir "
@@ -291,6 +381,7 @@ cmd_string_help db "help "
 cmd_string_mem db "mem "
 cmd_string_reboot db "reboot "
 cmd_string_shutdown db "shutdown "
+cmd_string_type db "type "
 
 typing_buffer db 142 dup(0)
 filename_shenanigans db 12 dup(0)
@@ -298,3 +389,5 @@ filename_shenanigans db 12 dup(0)
 entries dw 0
 
 buffer db 8192 dup(0)
+
+block dw 0

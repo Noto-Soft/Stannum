@@ -2,5 +2,6 @@ BIN  (only for kernel) flat binary, loaded directly into a set memory address
 COM  flat binary, userspace executable, position independent
 DEV  specifically device driver
 DRV  any hardware or software driver
+RAW  raw bitmap data (indexed to vga pallete)
 TUN  tune for the pc speaker
 TXT  text file

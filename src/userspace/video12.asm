@@ -18,21 +18,15 @@ main:
     xor cx, cx
     xor dx, dx
 .loop:
-    mov ax, cx
-    shr ax, 3
-    push dx
-    shr dx, 3
-    shl dx, 3
-    add ax, dx
-    pop dx
     call far [write_pixel_12h]
     inc cx
+    inc al
     cmp cx, 640
-    jne .loop
+    jb .loop
     xor cx, cx
     inc dx
     cmp dx, 480
-    jne .loop
+    jb .loop
 
     xor ah, ah
     int 0x16

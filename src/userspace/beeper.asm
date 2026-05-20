@@ -92,7 +92,7 @@ wait_note:
     ret
 
 msg_ctrl_q_to_break db "Break = CTRL+Q", 0x0a, 0
-msg_err_supply_filename db "Must supply filename!", 0x0a, 0
+msg_err_supply_filename db "Must supply filename! (.TUN files are good)", 0x0a, 0
 
 argument db 12 dup(0)
 block dw 0

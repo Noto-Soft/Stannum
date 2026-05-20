@@ -25,8 +25,21 @@ main:
     int 0x21
     mov ds, bx
 
-    xor ah, ah
+    mov ax, 0x0013
+    int 0x10
+
+    mov ax, 0xa000
+    mov es, ax
+
     xor si, si
+    xor di, di
+    mov cx, 320 * 200
+    rep movsb
+
+    xor ax, ax
+    int 0x16
+
+    mov ah, 0x07
     int 0x21
 
     mov ax, cs
@@ -49,7 +62,7 @@ error:
 
     retf
 
-msg_err_supply_filename db "Must supply filename!", 0x0a, 0
+msg_err_supply_filename db "Must supply filename! (.RAW images are good)", 0x0a, 0
 
 argument db 12 dup(0)
 block dw 0

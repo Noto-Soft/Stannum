@@ -44,7 +44,7 @@ prompt:
     cmp di, 0
     jna .typing
     dec di
-    mov byte [typing_buffer + di], " "
+    mov byte [typing_buffer + di], 0
     int 0x21
     mov al, " "
     int 0x21
@@ -62,12 +62,22 @@ prompt:
     jmp .typing
 
 write:
-    mov ah, 0x12
+    xor si, si
+.find_zero:
+    mov al, [typing_buffer + si]
+    test al, al
+    jz .found
+    inc si
+    jmp .find_zero
+.found:
+    xor ecx, ecx
+    mov cx, si
+
+    mov ah, 0x13
     mov bx, cs
     int 0x21
     mov ah, 0x0c
     add bx, 1
-    mov ecx, 128
     lea si, [filename]
     int 0x21
 
@@ -84,7 +94,8 @@ error:
 
     retf
 
-msg_err_supply_filename db "Must supply filename!", 0x0a, 0
+msg_err_supply_filename db "Must supply filename! (.TXT files are good)", 0x0a, 0
 filename db 12 dup(0)
 align 2048
-typing_buffer db 128 dup(" ")
+typing_buffer db 128 dup(0)
+db 0

@@ -18,7 +18,6 @@ main:
     xor cx, cx
     xor dx, dx
 .loop:
-    inc al
     call far [write_pixel_13h]
     inc cx
     call far [write_pixel_13h]
@@ -29,6 +28,7 @@ main:
     call far [write_pixel_13h]
     dec dx
     inc cx
+    inc al
     cmp cx, 320
     jb .loop
     xor cx, cx

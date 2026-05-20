@@ -601,7 +601,7 @@ fat12_file_exists:
     call filename_fixup
 
     call get_lba_and_size_of_root_dir
-    mov dl, [ebr_drive_number]
+    mov dl, [cs:ebr_drive_number]
     lea bx, [fat12_buffer]
     call disk_read
 
@@ -658,7 +658,7 @@ fat12_read_file_size:
     call filename_fixup
 
     call get_lba_and_size_of_root_dir
-    mov dl, [ebr_drive_number]
+    mov dl, [cs:ebr_drive_number]
     lea bx, [fat12_buffer]
     call disk_read
 
@@ -687,7 +687,7 @@ fat12_read_file_size:
     pop es
     pop ds
     popa
-    mov ecx, [fat12_read_file_size_filesize]
+    mov ecx, [cs:fat12_read_file_size_filesize]
     ret
 
 ; ds:si - filename
@@ -711,7 +711,7 @@ fat12_read_file:
     call filename_fixup
 
     call get_lba_and_size_of_root_dir
-    mov dl, [ebr_drive_number]
+    mov dl, [cs:ebr_drive_number]
     lea bx, [fat12_buffer]
     call disk_read
 
@@ -757,7 +757,7 @@ fat12_read_file:
     add ax, [fat12_read_file_file_cluster]
 
     mov cl, 1
-    mov dl, [ebr_drive_number]
+    mov dl, [cs:ebr_drive_number]
     call disk_read
 
     add bx, [bdb_bytes_per_sector]
@@ -836,6 +836,11 @@ load_fat12_info:
     pop es
     pop ds
     popa
+    mov [cs:ebr_drive_number], dl
+    ret
+
+get_drive:
+    mov dl, [cs:ebr_drive_number]
     ret
 
 fat12_read_fat:
@@ -868,7 +873,7 @@ fat12_disk_loc_fat:
     mov ax, [bdb_reserved_sectors]
     lea bx, [fat12_buffer]
     mov cl, [bdb_sectors_per_fat]
-    mov dl, [ebr_drive_number]
+    mov dl, [cs:ebr_drive_number]
     ret
 
 ; ax - starting sector of data
@@ -891,7 +896,7 @@ fat12_first_free_entry:
     call get_lba_and_size_of_root_dir
     mov [fat12_first_free_entry_entries], bx
     lea bx, [fat12_buffer]
-    mov dl, [ebr_drive_number]
+    mov dl, [cs:ebr_drive_number]
     call disk_read
 
     xor si, si
@@ -938,6 +943,7 @@ fat12_write_file_entry:
     mov dword [fat12_buffer + bp + 28], ecx
     call get_lba_and_size_of_root_dir
     lea bx, [fat12_buffer]
+    mov dl, [cs:ebr_drive_number]
     call disk_write
     pop es
     pop ds
@@ -1088,7 +1094,7 @@ fat12_write_file:
     call fat12_get_data_start
     add ax, [fat12_write_file_last_cluster]
     mov cl, 1
-    mov dl, [ebr_drive_number]
+    mov dl, [cs:ebr_drive_number]
     mov bx, [fat12_write_file_offset]
     call disk_write
     add bx, 512
@@ -1148,6 +1154,7 @@ fat12_delete_file:
     mov byte [fat12_buffer + si], 0
     call get_lba_and_size_of_root_dir
     lea bx, [fat12_buffer]
+    mov dl, [cs:ebr_drive_number]
     call disk_write
     mov ax, word [fat12_buffer + si + 26]
     call fat12_delete_cluster_chain
@@ -1405,8 +1412,8 @@ int21:
 .call_table:
     dw puts, fat12_read_file, run_program, load_fat12_info, get_lba_and_size_of_root_dir, putc, fat12_file_exists, reset_vga_text_mode, \
         deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id, fat12_write_file, fat12_delete_file, \
-        set_text_attribute, putb, putw, put_hex, \
-        get_block_id_from_segment
+        set_text_attribute, fat12_read_file_size, putb, putw, put_hex, \
+        get_block_id_from_segment, get_drive
     dw (256-($-.call_table))/2 dup(stub)
 
 msg_logo file '../inc/logo.txt'
@@ -1421,7 +1428,7 @@ msg_loading_pcspk db "Loading PC speaker driver [PCSPK.DEV]", 0x0a, 0
 msg_loading_vga db "Loading VGA graphics driver [VGA.DEV]", 0x0a, 0
 msg_putm_guide db "each character represents the state of a 2KiB block of memory", 0x0a, "Legend:", 0x0a, ". = free", 0x0a, "^ = taken", 0x0a, "$ = end of chunk", 0x0a, "* = resident", 0x0a, 0x0a, 0
 
-msg_err_floppy db "Disk error", 0x0a, 0
+msg_err_floppy db "Disk error. Check the disk is inserted and working.", 0x0a, 0
 msg_err_missing db "File not found", 0x0a, 0
 msg_err_oom db "Kernel panicing: out of memory", 0x0a, 0
 
@@ -1433,7 +1440,7 @@ file_scli_com db "scli.com", 0
 
 newline db 0x0a, 0
 
-db "Notosoft Stannum Kernel", 0x0a, 0x0d
+db "Notosoft Stannum Kernel", 0x0a
 db "i was here 5.12.2026"
 
 reupload db 0
@@ -1513,6 +1520,7 @@ ebr_signature:              db ?
 ebr_volume_id:              dd ?
 ebr_volume_label:           db 11 dup(?)
 ebr_system_id:              db 8 dup(?)
+db 512-($-bdb) dup(?)
 
 align 16
 db 8192 dup(?)
