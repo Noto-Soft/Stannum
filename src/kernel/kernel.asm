@@ -52,29 +52,20 @@ main:
     lea si, [msg_missing_conf]
     call puts
 
-    mov dx, 0x3c4
-    mov al, 0x01
-    out dx, al
-    inc dx
-    in al, dx
-    or al, 0x01
-    out dx, al
-
     jmp .done_setup
 .does:
     lea si, [file_scli_com]
     lea bx, [file_config_sys]
     call run_program
 
-    mov ah, 0x02
-    mov cl, 1
-    int 0x30
 
     ; done printing startup messages
     ; put newline for spacing idk look good
     ;lea si, [newline]
     ;call puts
 .done_setup:
+    call set_8_dot
+
     lea si, [file_scli_com]
     xor bx, bx
     call run_program
@@ -310,10 +301,38 @@ reset_vga_text_mode:
     mov ax, 0x1112
     xor bl, bl
     int 0x10
+    call set_8_dot
+    popa
+    ret
+
+set_8_dot:
+    push ax
+    push bx
+    push cx
+    xor ax, ax
+    int 0x30
+    test ax, ax
+    jz .generic
     mov ah, 0x02
     mov cl, 1
     int 0x30
-    popa
+    pop cx
+    pop bx
+    pop ax
+    ret
+.generic:
+    push dx
+    mov dx, 0x3c4
+    mov al, 0x01
+    out dx, al
+    inc dx
+    in al, dx
+    or al, 0x01
+    out dx, al
+    pop dx
+    pop cx
+    pop bx
+    pop ax
     ret
 
 putm:
