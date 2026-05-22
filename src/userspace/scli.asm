@@ -384,9 +384,17 @@ type:
     int 0x21
     mov [block], bx
     
+    mov ah, 0x0f
+    lea si, [typing_buffer + 5]
+    int 0x21
+    mov [file_size], cx
+
     mov ah, 0x0b
     int 0x21
     mov ds, bx
+
+    mov bx, [cs:file_size]
+    mov byte [bx], 0
 
     xor ah, ah
     xor si, si
@@ -465,6 +473,7 @@ cmd_string_type db "type "
 input_type db 0
 file_seg dw 0
 file_off dw 0
+file_size dw 0
 
 typing_buffer db 142 dup(0)
 filename_shenanigans db 12 dup(0)
