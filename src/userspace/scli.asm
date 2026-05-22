@@ -1,10 +1,50 @@
 use16
 
 main:
-    mov ax, cs
+    mov ax, es
     mov ds, ax
+    mov ax, cs
     mov es, ax
 
+    lea di, [argument]
+    mov cx, 12
+    rep movsb
+
+    mov ax, cs
+    mov ds, ax
+
+    cmp byte [argument], " "
+    je .normal_input
+
+    mov ah, 0x06
+    lea si, [argument]
+    int 0x21
+
+    test al, al
+    jnz .continue_loading_scli_script
+
+    mov ah, 0x0e
+    mov bl, 0x0c
+    int 0x21
+
+    xor ah, ah
+    lea si, [msg_err_not_exist]
+    int 0x21
+
+    jmp exit
+.continue_loading_scli_script:
+    mov ah, 0x01
+    lea si, [argument]
+    int 0x21
+
+    mov ah, 0x0b
+    int 0x21 
+
+    mov [file_seg], bx
+    mov [input_type], 1
+
+    jmp prompt
+.normal_input:
     mov ah, 0x0e
     mov bl, 0x0f
     int 0x21
@@ -23,6 +63,9 @@ prompt:
     mov cx, 142/2
     rep stosw
 
+    cmp [input_type], 1
+    je .skip_prompt
+
     mov ah, 0x14
     int 0x21
 
@@ -35,24 +78,28 @@ prompt:
     lea si, [prompt_string]
     int 0x21
 
+.skip_prompt:
     xor di, di
 .typing:
-    xor ax, ax
-    int 0x16
+    call get_input
     cmp al, 0x0d
+    je parse
+    cmp al, 0x0a
     je parse
     cmp al, 0x08
     je .backspace
     cmp di, 142
     jae .typing
     mov [typing_buffer + di], al
+    inc di
+    cmp [input_type], 1
+    je .typing
     mov ah, 0x05
     int 0x21
-    inc di
     jmp .typing
 .backspace:
-    cmp di, 0
-    jna .typing
+    test di, di
+    jz .typing
     dec di
     mov ah, 0x05
     mov byte [typing_buffer + di], 0
@@ -63,11 +110,33 @@ prompt:
     int 0x21
     jmp .typing
 
+get_input:
+    cmp [input_type], 1
+    je .from_file
+    xor ah, ah
+    int 0x16
+    ret
+.from_file:
+    push bx
+    push es
+    mov bx, [file_seg]
+    mov es, bx
+    mov bx, [file_off]
+    mov al, [es:bx]
+    inc bx
+    mov [file_off], bx
+    pop es
+    pop bx
+    ret
+
 parse:
+    cmp [input_type], 1
+    je .skip_newline
+
     mov ah, 0x05
     mov al, 0x0a
     int 0x21
-
+.skip_newline:
     test di, di
     jz prompt
 
@@ -358,6 +427,15 @@ drive_b:
     jmp dir
 
 exit:
+    cmp [input_type], 1
+    jne .joever
+    mov ah, 0x13
+    mov bx, [file_seg]
+    int 0x21
+
+    mov ah, 0x08
+    int 0x21
+.joever:
     retf
 
 msg_scli_startup db "SCLi -- Stannum Command Line", 0x0a, 0
@@ -368,6 +446,7 @@ msg_help file '../inc/help.txt'
 
 msg_err_not_file db "Not a valid command or executable. Run 'help' command", 0x0a, 0
 msg_err_supply_filename db "Must supply filename!", 0x0a, 0
+msg_err_not_exist db "File doesn't exist", 0x0a, 0
 
 prompt_string db ">", 0
 
@@ -383,8 +462,14 @@ cmd_string_reboot db "reboot "
 cmd_string_shutdown db "shutdown "
 cmd_string_type db "type "
 
+input_type db 0
+file_seg dw 0
+file_off dw 0
+
 typing_buffer db 142 dup(0)
 filename_shenanigans db 12 dup(0)
+
+argument db 12 dup(0)
 
 entries dw 0
 

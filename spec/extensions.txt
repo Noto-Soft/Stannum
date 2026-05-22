@@ -1,7 +1,10 @@
 BIN  (only for kernel) flat binary, loaded directly into a set memory address
+CFG  config files
 COM  flat binary, userspace executable, position independent
 DEV  specifically device driver
 DRV  any hardware or software driver
 RAW  raw bitmap data (indexed to vga pallete)
+SCL  scripts to be run by SCLI.COM [some conf files are actually just scl files]
+SYS  system files (probably usualy config files)
 TUN  tune for the pc speaker
 TXT  text file

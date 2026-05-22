@@ -1,0 +1,13 @@
+echo Enabling high memory [HIGH.DRV]
+high.drv
+echo Loading serial I/O driver [SERIAL.DEV]
+serial.dev
+echo Loading PC speaker driver [PCSPK.DEV]
+pcspk.dev
+echo Loading VGA graphics driver [VGA.DEV]
+vga.dev
+echo
+echo Running user config if it exists [USR.CFG]
+scli usr.cfg
+echo
+exit

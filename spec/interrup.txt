@@ -302,6 +302,8 @@ VGA.DEV - SET 8/9 CHARACTER WIDTH (MODE 03h)
 AH = 02h
 CL = disable 9 dots mode (0 for no, 1 for yes)
 
+Note: Prefer using this over directly setting VGA registers if possible
+
 Return:
 Nothing
 

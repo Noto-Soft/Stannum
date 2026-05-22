@@ -19,7 +19,7 @@ main:
 prompt:
     xor ax, ax
     lea di, [typing_buffer]
-    mov cx, 64
+    mov cx, 510/2
     rep stosw
 
     xor di, di
@@ -32,7 +32,7 @@ prompt:
     je .newline
     cmp al, 0x08
     je .backspace
-    cmp di, 128
+    cmp di, 511
     jae .typing
     mov [typing_buffer + di], al
     mov ah, 0x05
@@ -53,7 +53,7 @@ prompt:
     jmp .typing
 .newline:
     mov ah, 0x05
-    cmp di, 127
+    cmp di, 510
     jnbe .typing
     mov al, 0x0a
     mov byte [typing_buffer + di], al
@@ -97,5 +97,5 @@ error:
 msg_err_supply_filename db "Must supply filename! (.TXT files are good)", 0x0a, 0
 filename db 12 dup(0)
 align 2048
-typing_buffer db 128 dup(0)
+typing_buffer db 511 dup(0)
 db 0
