@@ -10,9 +10,9 @@ main:
 
 .forever:
     mov ah, 0x01
-    lea si, [file_kernel_bin]
+    lea si, [file_panick_com]
     int 0x21
 
     jmp .forever
 
-file_kernel_bin db "kernel.bin", 0
+file_panick_com db "panick.com", 0

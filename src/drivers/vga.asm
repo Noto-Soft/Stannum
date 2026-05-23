@@ -12,6 +12,13 @@ use16
 include '../inc/wrap.inc'
 
 main:
+    mov ax, cs
+    mov ds, ax
+
+    xor ah, ah
+    lea si, [msg_loading]
+    int 0x21
+
     wrap 0x30, wrapint30h
 
     mov ah, 0x09
@@ -148,6 +155,8 @@ wrapint30h:
 .call_table:
     dw get_write_pixel_12h_ptr, get_write_pixel_13h_ptr, set_character_size
     dw (256-($-.call_table))/2 dup(stub)
+
+msg_loading db "[VGA.DEV] Loading VGA graphics driver", 0x0a, 0
 
 offset_original dw 0
 segment_original dw 0

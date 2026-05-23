@@ -9,6 +9,10 @@ main:
     mov ax, cs
     mov ds, ax
 
+    xor ah, ah
+    lea si, [msg_loading]
+    int 0x21
+
     mov dx, 0x3fb
     mov al, 0x80
     out dx, al
@@ -98,6 +102,7 @@ wrapint36h:
     dw write_serial, read_serial
     dw (256-($-.call_table))/2 dup(stub)
 
+msg_loading db "[SERIAL.DEV] Loading serial I/O driver", 0x0a, 0
 msg_initialized db "    * Port COM1 initialized", 0x0a, 0
 
 offset_original dw 0

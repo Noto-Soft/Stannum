@@ -6,6 +6,13 @@ use16
 include '../inc/wrap.inc'
 
 main:
+    mov ax, cs
+    mov ds, ax
+
+    xor ah, ah
+    lea si, [msg_loading]
+    int 0x21
+
     call speaker_state
     test al, 0x03
     jz .skip_disable_speaker
@@ -14,9 +21,6 @@ main:
     mov ah, 0x0e
     mov bl, 0x03
     int 0x21
-
-    mov ax, cs
-    mov ds, ax
 
     xor ah, ah
     lea si, [msg_disabled_speaker]
@@ -107,6 +111,7 @@ wrapint32h:
     dw set_freq, speaker_on, speaker_off
     dw (256-($-.call_table))/2 dup(stub)
 
+msg_loading db "[PCSPK.DEV] Loading PC speaker driver", 0x0a, 0
 msg_disabled_speaker db "    * Turned off PC speaker", 0x0a, 0
 
 offset_original dw 0

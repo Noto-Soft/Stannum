@@ -10,6 +10,10 @@ main:
     mov ds, ax
     mov es, ax
 
+    xor ah, ah
+    lea si, [msg_enabling]
+    int 0x21
+
     push es
     xor ax, ax
     mov es, ax
@@ -161,5 +165,6 @@ get_a20_state_int:
     call get_a20_state
     iret
 
+msg_enabling db "[HIGH.DRV] Enabling high memory", 0x0a, 0
 msg_already_enabled db "    * The A20 line is already enabled by the BIOS! :)", 0x0a, 0
 msg_err_not_enabled db "    * A20 line failed to enable", 0x0a, 0

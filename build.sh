@@ -19,9 +19,10 @@ fasm src/userspace/beeper.asm build/beeper.com
 fasm src/userspace/video12.asm build/video12.com
 fasm src/userspace/video13.asm build/video13.com
 fasm src/userspace/image.asm build/image.com
-fasm src/userspace/vesatest.asm build/vesatest.com
+#fasm src/userspace/vesatest.asm build/vesatest.com
 fasm src/userspace/panick.asm build/panick.com
 fasm src/userspace/echo.asm build/echo.com
+fasm src/userspace/notagame.asm build/notagame.com
 
 fasm src/tunes/mouth.asm build/mouth.tun
 fasm src/tunes/scale.asm build/scale.tun
@@ -49,12 +50,13 @@ mcopy -i os.img build/hello.com "::hello.com"
 mcopy -i os.img build/write.com "::write.com"
 mcopy -i os.img build/copyf.com "::copyf.com"
 mcopy -i os.img build/echo.com "::echo.com"
-mcopy -i os.img build/vesatest.com "::vesatest.com"
+#mcopy -i os.img build/vesatest.com "::vesatest.com"
 mcopy -i os.img build/beeper.com "::beeper.com"
 mcopy -i os.img build/video12.com "::video12.com"
 mcopy -i os.img build/video13.com "::video13.com"
 mcopy -i os.img build/image.com "::image.com"
 mcopy -i os.img build/panick.com "::panick.com"
+mcopy -i os.img build/notagame.com "::notagame.com"
 
 mcopy -i os.img src/userspace/config/config.sys "::config.sys"
 mcopy -i os.img src/userspace/config/usr.cfg "::usr.cfg"
@@ -62,6 +64,7 @@ mcopy -i os.img src/userspace/config/usr.cfg "::usr.cfg"
 mcopy -i os.img LICENSE "::license.txt"
 mcopy -i os.img src/userspace/docs/abc.txt "::abc.txt"
 mcopy -i os.img spec/extensions.txt "::extens.txt"
+mcopy -i os.img src/userspace/docs/delete.txt "::delete.txt"
 
 mcopy -i os.img build/mouth.tun "::mouth.tun"
 mcopy -i os.img build/scale.tun "::scale.tun"

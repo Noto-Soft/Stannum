@@ -57,12 +57,6 @@ main:
     lea si, [file_scli_com]
     lea bx, [file_config_sys]
     call run_program
-
-
-    ; done printing startup messages
-    ; put newline for spacing idk look good
-    ;lea si, [newline]
-    ;call puts
 .done_setup:
     call set_8_dot
 
@@ -1435,6 +1429,7 @@ msg_credit file '../inc/credit.txt'
 msg_kernel_done db "Stannum kernel has somehow finished all jobs, terminating", 0x0a, 0
 msg_patching db "Patching the IVT", 0x0a, 0
 msg_missing_conf db "CONFIG.SYS missing. No drivers were loaded. [Using generic functions]", 0x0a, 0
+msg_xbox db "you turned on the xbox", 0x0a, 0
 msg_putm_guide db "each character represents the state of a 2KiB block of memory", 0x0a, "Legend:", 0x0a, ". = free", 0x0a, "^ = taken", 0x0a, "$ = end of chunk", 0x0a, "* = resident", 0x0a, 0x0a, 0
 
 msg_err_floppy db "Disk error. Check the disk is inserted and working.", 0x0a, 0
