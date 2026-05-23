@@ -28,6 +28,7 @@ fasm src/tunes/mouth.asm build/mouth.tun
 fasm src/tunes/scale.asm build/scale.tun
 fasm src/tunes/pb95.asm build/pb95.tun
 fasm src/tunes/eight52.asm build/eight52.tun
+fasm src/tunes/atsol.asm build/atsol.tun
 
 # gcc -m16 -ffreestanding -nostdlib -fno-pie -fno-pic -Wl,--oformat=binary -s -o build/ctest.bin src/ctest.c
 
@@ -70,6 +71,7 @@ mcopy -i os.img build/mouth.tun "::mouth.tun"
 mcopy -i os.img build/scale.tun "::scale.tun"
 mcopy -i os.img build/pb95.tun "::pb95.tun"
 mcopy -i os.img build/eight52.tun "::eight52.tun"
+mcopy -i os.img build/atsol.tun "::atsol.tun"
 
 mcopy -i os.img assets/scp079.raw "::scp079.raw"
 mcopy -i os.img assets/maroi.raw "::maroi.raw"
@@ -79,7 +81,7 @@ mcopy -i os.img assets/franklin.raw "::franklin.raw"
 fatsort os.img
 
 if [[ "$1" == "test" ]]; then
-    qemu-system-x86_64 -name Stannum -fda os.img -machine pcspk-audiodev=spk -audiodev pa,id=spk -vga std --enable-kvm -cpu host
+    bash test.sh
 else
     echo "[build.sh] Run \"bash build.sh test\" to build and then boot into qemu (qemu-system-x86 package required)"
 fi

@@ -1434,7 +1434,7 @@ msg_putm_guide db "each character represents the state of a 2KiB block of memory
 
 msg_err_floppy db "Disk error. Check the disk is inserted and working.", 0x0a, 0
 msg_err_missing db "File not found", 0x0a, 0
-msg_err_oom db "Kernel panicing: out of memory", 0x0a, 0
+msg_err_oom db "Kernel panicing: out of memory", 0x0a, 0x07, 0
 
 file_config_sys db "config.sys", 0
 file_scli_com db "scli.com", 0
