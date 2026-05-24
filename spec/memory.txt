@@ -1,0 +1,13 @@
+On the topic of memory:
+
+Each program must specify the conventional memory it requires by writing zero
+    bytes to the end of the program binary
+
+A program can get pointers to 1KiB blocks of high memory by interfacing with a
+    high memory manager. The pointers will be 32 bits and usable through the fs
+    segment register
+
+PLEASE if you are a programmer do not interfere with the fs segment register,
+    it will break the high memory interface. The kernel sets the fs register
+    on boot time, so changing it is not necessary. Only ever modify the ds and
+    es registers (gs is also reserved for future projects/features)

@@ -6,12 +6,19 @@ macro patch num, handler, rcs {
 }
 
 main:
+    cmp [cs:kernel_panic_on_return_to_kernel], 1
+    jne .init_normal
+
+    jmp kernel_panic
+.init_normal:
     mov ax, cs
     mov ds, ax
     mov es, ax
 
     mov ss, ax
     lea sp, [stack_top]
+
+    mov [kernel_panic_on_return_to_kernel], 1
 
     call reset_vga_text_mode
 
@@ -1498,6 +1505,8 @@ fat12_next_cluster dw ?
 fat12_delete_file_filename_buffer db 12 dup(?)
 
 run_program_argument_buffer db 128 dup(?)
+
+kernel_panic_on_return_to_kernel db 0
 
 label bdb
 db 3 dup(?)

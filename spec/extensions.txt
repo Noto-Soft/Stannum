@@ -1,10 +1,14 @@
-BIN  (only for kernel) flat binary, loaded directly into a set memory address
-CFG  config files
-COM  flat binary, userspace executable, position independent
-DEV  specifically device driver
-DRV  any hardware or software driver
-RAW  raw bitmap data (indexed to vga pallete)
-SCL  scripts to be run by SCLI.COM [some conf files are actually just scl files]
-SYS  system files (probably usualy config files)
-TUN  tune for the pc speaker
-TXT  text file
+BIN   (only for kernel) flat binary, loaded directly into a set memory address
+CFG   config files
+COM   flat binary, userspace executable, offset 0x0000, treated as a far call
+        (returns with retf)
+DEV   specifically device driver
+DRV   any hardware or software driver
+RAW   raw bitmap data (to be interpreted by the program loading them, but for
+        IMAGE.COM this is a 320x200 8bpp indexed image, the pallete being the
+        default for VGA mode 13h)
+SCL   scripts to be run by SCLI.COM (some configs are actually just scl files
+        under the hood, for example CONFIG.SYS)
+SYS   system files (probably usually config files)
+TUN   "tune" for the pc speaker, to be used by BEEPER.COM
+TXT   plaintext, codepage 437

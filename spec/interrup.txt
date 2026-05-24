@@ -31,6 +31,8 @@ int 32/AH=01h - PCSPK.DEV - ENABLE PC SPEAKER
 int 32/AH=02h - PCSPK.DEV - DISABLE PC SPEAKER
 int 36/AH=00h - SERIAL.DEV - WRITE CHARACTER TO COM1
 int 36/AH=01h - SERIAL.DEV - READ CHARACTER FROM COM1
+int 40/AH=00h - HIGH.DRV - ALLOCATE HIGH MEMORY
+int 40/AH=01h - HIGH.DRV - DEALLOCATE HIGH MEMORY
 int A2 - HIGH.DRV - CHECK IF A20 LINE WAS ENABLED
 
 
@@ -351,6 +353,26 @@ AH = 01h
 
 Return:
 AL = character
+
+
+
+HIGH.DRV - ALLOCATE HIGH MEMORY
+
+AH = 00h
+CX = size of memory block to allocate (in KiB)
+
+Return:
+EBX = pointer
+
+
+
+HIGH.DRV - DEALLOCATE HIGH MEMORY
+
+AH = 01h
+EBX = pointer
+
+Return:
+Nothing
 
 
 

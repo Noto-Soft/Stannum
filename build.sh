@@ -13,7 +13,7 @@ fasm src/drivers/vga.asm build/vga.dev
 
 fasm src/userspace/scli.asm build/scli.com
 fasm src/userspace/hello.asm build/hello.com
-fasm src/userspace/write.asm build/write.com
+fasm src/userspace/writef.asm build/writef.com
 fasm src/userspace/copyf.asm build/copyf.com
 fasm src/userspace/beeper.asm build/beeper.com
 fasm src/userspace/video12.asm build/video12.com
@@ -48,7 +48,7 @@ mcopy -i os.img build/vga.dev "::vga.dev"
 
 mcopy -i os.img build/scli.com "::scli.com"
 mcopy -i os.img build/hello.com "::hello.com"
-mcopy -i os.img build/write.com "::write.com"
+mcopy -i os.img build/writef.com "::writef.com"
 mcopy -i os.img build/copyf.com "::copyf.com"
 mcopy -i os.img build/echo.com "::echo.com"
 #mcopy -i os.img build/vesatest.com "::vesatest.com"
@@ -66,6 +66,7 @@ mcopy -i os.img LICENSE "::license.txt"
 mcopy -i os.img src/userspace/docs/abc.txt "::abc.txt"
 mcopy -i os.img spec/extensions.txt "::extens.txt"
 mcopy -i os.img src/userspace/docs/delete.txt "::delete.txt"
+mcopy -i os.img spec/memory.txt "::memory.txt"
 
 mcopy -i os.img build/mouth.tun "::mouth.tun"
 mcopy -i os.img build/scale.tun "::scale.tun"
@@ -78,7 +79,7 @@ mcopy -i os.img assets/maroi.raw "::maroi.raw"
 mcopy -i os.img assets/listen.raw "::listen.raw"
 mcopy -i os.img assets/franklin.raw "::franklin.raw"
 
-fatsort os.img
+fatsort os.img -q
 
 if [[ "$1" == "test" ]]; then
     bash test.sh
