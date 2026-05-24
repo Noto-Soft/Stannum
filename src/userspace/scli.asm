@@ -270,14 +270,27 @@ parse:
     add bx, si
     inc bx
 
-    lea si, [filename_shenanigans]
-    ; bx already populated
     mov ah, 0x06
-    push si
+    lea si, [filename_shenanigans]
     int 0x21
-    pop si
     test al, al
     jz error_not_file
+
+    push bx
+    mov ah, 0x15
+    lea si, [filename_shenanigans]
+    lea bx, [extens_buffer]
+    int 0x21
+    pop bx
+
+    call check_if_extension_valid
+    test al, al
+    jz error_not_file
+    cmp al, 2
+    je .pass_to_scli_com
+
+    lea si, [filename_shenanigans]
+    ; bx already populated
     push bx
     mov ah, 0x0e
     mov bl, 0x07
@@ -287,6 +300,51 @@ parse:
     int 0x21
 
     jmp prompt
+.pass_to_scli_com:
+    mov ah, 0x02
+    lea si, [file_scli_com]
+    lea bx, [filename_shenanigans]
+    int 0x21
+
+    jmp prompt
+
+; returns in al
+;   0 if invalid executable
+;   1 if native binary
+;   2 if command script to be ran by scli.com
+check_if_extension_valid:
+    cmp word [extens_buffer], "CO"
+    jne .check_next
+    cmp byte [extens_buffer + 2], "M"
+    jne .invalid
+    jmp .native
+.check_next:
+    cmp word [extens_buffer], "DR"
+    jne .check_next_2
+    cmp byte [extens_buffer + 2], "V"
+    jne .invalid
+    jmp .native
+.check_next_2:
+    cmp word [extens_buffer], "DE"
+    jne .check_next_3
+    cmp byte [extens_buffer + 2], "V"
+    jne .invalid
+    jmp .native
+.check_next_3:
+    cmp word [extens_buffer], "SC"
+    jne .invalid
+    cmp byte [extens_buffer + 2], "L"
+    jne .invalid
+    jmp .script
+.invalid:
+    xor al, al
+    ret
+.native:
+    mov al, 1
+    ret
+.script:
+    mov al, 2
+    ret
 
 error_not_file:
     mov ah, 0x0e
@@ -469,6 +527,10 @@ cmd_string_mem db "mem "
 cmd_string_reboot db "reboot "
 cmd_string_shutdown db "shutdown "
 cmd_string_type db "type "
+
+file_scli_com db "scli.com", 0
+
+extens_buffer db 4 dup(0)
 
 input_type db 0
 file_seg dw 0

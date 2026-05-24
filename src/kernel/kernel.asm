@@ -651,6 +651,52 @@ fat12_file_exists:
     ret
 
 ; ds:si - filename
+; es:bx - extension buffer (3 bytes)
+; returns:
+;   extension in es:bx
+fat12_file_extension:
+    push ax
+    push cx
+    push di
+
+    push si
+    push es
+
+    mov ax, cs
+    mov es, ax
+
+    lea di, [fat12_filename]
+    mov cx, 12
+    rep movsb
+
+    pop es
+    
+    push ds
+
+    mov ax, cs
+    mov ds, ax
+
+    push es
+    mov es, ax
+    call filename_fixup
+    pop es
+
+    lea si, [fat12_filename + 8]
+    mov di, bx
+    mov cx, 3
+    rep movsb
+
+    pop ds
+
+    pop si
+
+    pop di
+    pop cx
+    pop ax
+
+    ret
+
+; ds:si - filename
 ; returns:
 ;   ecx - size in bytes
 fat12_read_file_size:
@@ -1426,7 +1472,7 @@ int21:
     dw puts, fat12_read_file, run_program, load_fat12_info, get_lba_and_size_of_root_dir, putc, fat12_file_exists, reset_vga_text_mode, \
         deallocate_interrupt_wrapper, stay_resident_after_terminate, putm, get_segment_from_block_id, fat12_write_file, fat12_delete_file, \
         set_text_attribute, fat12_read_file_size, putb, putw, put_hex, \
-        get_block_id_from_segment, get_drive
+        get_block_id_from_segment, get_drive, fat12_file_extension
     dw (256-($-.call_table))/2 dup(stub)
 
 msg_logo file '../inc/logo.txt'
@@ -1454,6 +1500,8 @@ db "i was here 5.12.2026"
 reupload db " ", 0
 
 deadly_errors db 1
+
+kernel_panic_on_return_to_kernel db 0
 
 text_attribute db ?
 
@@ -1505,8 +1553,6 @@ fat12_next_cluster dw ?
 fat12_delete_file_filename_buffer db 12 dup(?)
 
 run_program_argument_buffer db 128 dup(?)
-
-kernel_panic_on_return_to_kernel db 0
 
 label bdb
 db 3 dup(?)

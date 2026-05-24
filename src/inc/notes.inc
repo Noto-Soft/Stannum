@@ -59,5 +59,8 @@ A6 = 1760
 As6 = 1865
 B6 = 1976
 CONT = 0
+TIME = 0xfffd
 REST = 0xfffe
 ENDS = 0xffff
+
+BASE_TIME = 159744

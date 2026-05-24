@@ -1,5 +1,7 @@
 use16
 
+include '../inc/notes.inc'
+
 main:
     mov ax, es
     mov ds, ax
@@ -43,15 +45,24 @@ main:
     add si, 2
     test bx, bx
     jz .nothing
-    cmp bx, 0xffff
+    cmp bx, ENDS
     je .done
-    cmp bx, 0xfffe
+    cmp bx, REST
     je .turn_off
+    cmp bx, TIME
+    je .time
     mov ah, 0x01
     int 0x32
     xor ah, ah
     int 0x32
     jmp .nothing
+.time:
+    mov bx, [si]
+    mov [cs:time_low], bx
+    mov bx, [si + 2]
+    mov [cs:time_high], bx
+    add si, 4
+    jmp .loop
 .turn_off:
     mov ah, 0x02
     int 0x32
@@ -85,8 +96,8 @@ error:
 wait_note:
     pusha
     mov ah, 0x86
-    mov cx, 0x2
-    mov dx, 0x7000
+    mov cx, [cs:time_high]
+    mov dx, [cs:time_low]
     int 0x15
     popa
     ret
@@ -96,3 +107,5 @@ msg_err_supply_filename db "Must supply filename! (.TUN files are good)", 0x0a, 
 
 argument db 12 dup(0)
 block dw 0
+time_low dw 0x7000
+time_high dw 0x2
