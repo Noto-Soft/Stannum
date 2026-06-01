@@ -1,4 +1,4 @@
-Notosoft Stannum kernel 4.10
+Notosoft Stannum kernel 4.11
 Copyright (c) 2026 Notosoft Solutions -- BSD 2-Clause License
     excelsior
 
