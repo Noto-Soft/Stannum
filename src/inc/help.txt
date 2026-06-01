@@ -7,10 +7,12 @@
 บ  * clear                   บ
 บ  * del                     บ
 บ  * dir                     บ
+บ  * echo                    บ
 บ  * exit                    บ
 บ  * help                    บ
 บ  * mem                     บ
 บ  * reboot                  บ
+บ  * rem                     บ
 บ  * shutdown                บ
 บ  * type                    บ
 ศออออออออออออออออออออออออออออผ

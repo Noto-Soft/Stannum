@@ -152,6 +152,18 @@ parse:
     jne .zeroes_to_spaces
 
     lea si, [typing_buffer]
+    lea di, [cmd_string_rem]
+    mov cx, 4
+    repe cmpsb
+    je prompt
+
+    lea si, [typing_buffer]
+    lea di, [cmd_string_echo]
+    mov cx, 5
+    repe cmpsb
+    je echo
+
+    lea si, [typing_buffer]
     lea di, [cmd_string_exit]
     mov cx, 5
     repe cmpsb
@@ -492,6 +504,30 @@ drive_b:
 
     jmp dir
 
+echo:
+    mov ax, cs
+    mov ds, ax
+
+    mov byte [typing_buffer + 141], 0
+    mov di, 140
+.clear_trailing_spaces:
+    mov al, [typing_buffer + di]
+    cmp al, " "
+    jne .done
+    mov byte [typing_buffer + di], 0
+    dec di
+    jmp .clear_trailing_spaces
+.done:
+    xor ah, ah
+    lea si, [typing_buffer + 5]
+    int 0x21
+    
+    mov ah, 0x05
+    mov al, 0x0a
+    int 0x21
+
+    jmp prompt
+
 exit:
     cmp [input_type], 1
     jne .joever
@@ -521,10 +557,12 @@ cmd_string_b db "b: "
 cmd_string_clear db "clear "
 cmd_string_del db "del "
 cmd_string_dir db "dir "
+cmd_string_echo db "echo "
 cmd_string_exit db "exit "
 cmd_string_help db "help "
 cmd_string_mem db "mem "
 cmd_string_reboot db "reboot "
+cmd_string_rem db "rem "
 cmd_string_shutdown db "shutdown "
 cmd_string_type db "type "
 

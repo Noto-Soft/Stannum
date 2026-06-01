@@ -21,7 +21,6 @@ fasm src/userspace/video13.asm build/video13.com
 fasm src/userspace/image.asm build/image.com
 #fasm src/userspace/vesatest.asm build/vesatest.com
 fasm src/userspace/panick.asm build/panick.com
-fasm src/userspace/echo.asm build/echo.com
 fasm src/userspace/notagame.asm build/notagame.com
 
 fasm src/tunes/mouth.asm build/mouth.tun
@@ -50,7 +49,6 @@ mcopy -i os.img build/scli.com "::scli.com"
 mcopy -i os.img build/hello.com "::hello.com"
 mcopy -i os.img build/writef.com "::writef.com"
 mcopy -i os.img build/copyf.com "::copyf.com"
-mcopy -i os.img build/echo.com "::echo.com"
 #mcopy -i os.img build/vesatest.com "::vesatest.com"
 mcopy -i os.img build/beeper.com "::beeper.com"
 mcopy -i os.img build/video12.com "::video12.com"

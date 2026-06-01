@@ -4,9 +4,10 @@ main:
     mov ax, cs
     mov ds, ax
 
-    xor ax, ax
+    xor ah, ah
+    xor bx, bx
     int 0x30
-    test ax, ax
+    test bx, bx
     jz exit_early_no_vga_driver
     mov [write_pixel_12h_off], ax
     mov [write_pixel_12h_seg], bx
